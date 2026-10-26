@@ -130,7 +130,13 @@ namespace Stealth.Model
             if (nativeWindow != null)
             {
                 var opacity = (byte)Math.Max(byte.MinValue, Math.Min(byte.MaxValue, item.Opacity));
-                nativeWindow.TrySetOpacity(opacity, out var diagnostic);
+                var applied = nativeWindow.TrySetOpacity(opacity, out var diagnostic);
+                if (!applied)
+                {
+                    // The slider changed optimistically; restore the value from
+                    // the last native snapshot if Windows denied the change.
+                    item.UpdateOpacityFromNative(nativeWindow.BAlpha);
+                }
                 item.OpacityError = diagnostic;
             }
         }

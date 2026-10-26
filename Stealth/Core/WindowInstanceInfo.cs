@@ -337,6 +337,10 @@ namespace Stealth.Core
         public void Dispose()
         {
             DisposeIconBitmap();
+            // Process.GetProcessById creates a disposable Process wrapper.
+            // Refresh repeatedly constructs snapshots, so release the OS handle.
+            process?.Dispose();
+            process = null;
             GC.SuppressFinalize(this);
         }
 
