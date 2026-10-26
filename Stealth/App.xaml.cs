@@ -31,9 +31,11 @@ namespace Stealth
 
         public static string CurrentLanguage { get; private set; } = "en-US";
 
-        public static string Localize(string key)
+        public static string Localize(string key, string englishFallback = null)
         {
-            return Current.TryFindResource(key) as string ?? key;
+            // Unit tests can call window helpers without creating a WPF Application.
+            // Keep English diagnostics usable even in that environment.
+            return Current?.TryFindResource(key) as string ?? englishFallback ?? key;
         }
 
         public static void ApplyLanguage(string requestedLanguage, bool savePreference = true)

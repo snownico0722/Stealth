@@ -58,7 +58,7 @@ namespace Stealth.Core
             {
                 if (!_api.TrySetExtendedStyle(handle, style | LayeredStyle, out var styleError))
                 {
-                    error = string.Format(Stealth.App.Localize("Error.EnableLayered"), styleError);
+                    error = string.Format(Stealth.App.Localize("Error.EnableLayered", "Could not enable WS_EX_LAYERED (Win32 error {0})."), styleError);
                     return false;
                 }
 
@@ -69,22 +69,22 @@ namespace Stealth.Core
             if (_api.TrySetLayeredAttributes(handle, colorKey, alpha, flags, out var alphaError))
             {
                 error = attributesUnknown
-                    ? string.Format(Stealth.App.Localize("Error.LayeredUnknown"), readError)
+                    ? string.Format(Stealth.App.Localize("Error.LayeredUnknown", "Best-effort opacity update succeeded, but existing layered attributes could not be read (Win32 error {0}). The target may use WPF per-pixel transparency, which can conflict with this update."), readError)
                     : null;
                 return true;
             }
 
             var rollbackError = 0;
             var rollbackFailed = enabledLayeredStyle && !_api.TrySetExtendedStyle(handle, style, out rollbackError);
-            error = string.Format(Stealth.App.Localize("Error.SetLayered"), alphaError);
+            error = string.Format(Stealth.App.Localize("Error.SetLayered", "SetLayeredWindowAttributes failed (Win32 error {0})."), alphaError);
             if (attributesUnknown)
             {
-                error += string.Format(Stealth.App.Localize("Error.OriginalUnknown"), readError);
+                error += string.Format(Stealth.App.Localize("Error.OriginalUnknown", " Existing layered attributes could not be read (Win32 error {0}); the target may use WPF per-pixel transparency."), readError);
             }
 
             if (rollbackFailed)
             {
-                error += string.Format(Stealth.App.Localize("Error.Rollback"), rollbackError);
+                error += string.Format(Stealth.App.Localize("Error.Rollback", " Restoring the original window style also failed (Win32 error {0})."), rollbackError);
             }
 
             return false;

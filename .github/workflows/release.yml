@@ -57,6 +57,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test -f release/Stealth-0.8.0-Windows.zip
-          sha256sum -c release/SHA256SUMS.txt --ignore-missing
+          (cd release && sha256sum -c SHA256SUMS.txt)
           gh release create v0.8.0 release/Stealth-0.8.0-Windows.zip release/SHA256SUMS.txt \
             --title "Stealth 0.8.0" --target "$GITHUB_SHA" --notes-file RELEASE_NOTES_0.8.0.md --latest
