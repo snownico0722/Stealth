@@ -1,0 +1,62 @@
+name: Release Stealth
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release:')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore Stealth.sln
+      - name: Build Release
+        run: dotnet build Stealth.sln --configuration Release --no-restore
+      - name: Test Release
+        run: dotnet test Stealth.sln --configuration Release --no-build
+      - name: Package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $app = Get-ChildItem 'Stealth/bin/Release' -Filter Stealth.exe -Recurse -File | Select-Object -First 1
+          if (-not $app) { throw 'Stealth.exe was not built' }
+          New-Item -ItemType Directory -Force 'release/app' | Out-Null
+          Copy-Item "$($app.DirectoryName)/*" 'release/app/' -Recurse -Force -Exclude '*.pdb'
+          Compress-Archive -Path 'release/app/*' -DestinationPath 'release/Stealth-0.8.0-Windows.zip' -Force
+          Remove-Item 'release/app' -Recurse -Force
+          $hash = (Get-FileHash 'release/Stealth-0.8.0-Windows.zip' -Algorithm SHA256).Hash.ToLower()
+          [IO.File]::WriteAllText("$PWD/release/SHA256SUMS.txt", "$hash  Stealth-0.8.0-Windows.zip`n")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stealth-release
+          path: release/*
+          if-no-files-found: error
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Stealth-release
+          path: release
+      - name: Publish verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -f release/Stealth-0.8.0-Windows.zip
+          sha256sum -c release/SHA256SUMS.txt --ignore-missing
+          gh release create v0.8.0 release/Stealth-0.8.0-Windows.zip release/SHA256SUMS.txt \
+            --title "Stealth 0.8.0" --target "$GITHUB_SHA" --notes-file RELEASE_NOTES_0.8.0.md --latest
