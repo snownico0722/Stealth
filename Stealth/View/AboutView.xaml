@@ -22,9 +22,9 @@
                 <TextBlock DockPanel.Dock="Top" FontSize="36">Stealth</TextBlock>
                 <TextBlock>
                     <Hyperlink NavigateUri="https://github.com/celeron533/Stealth" 
-                               RequestNavigate="Hyperlink_RequestNavigate">Stealth Project</Hyperlink></TextBlock>
+                               RequestNavigate="Hyperlink_RequestNavigate"><Run Text="{DynamicResource About.Project}"/></Hyperlink></TextBlock>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock>Version</TextBlock>
+                    <TextBlock Text="{DynamicResource About.Version}"/>
                     <TextBlock Width="8px"/>
                     <TextBlock Text="{Binding version}"/>
                 </StackPanel>

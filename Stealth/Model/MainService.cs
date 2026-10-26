@@ -112,11 +112,12 @@ namespace Stealth.Model
             }
 
             MessageBox.Show(
-                $"Handle: 0x{item.HWnd.ToInt64():X}\n" +
-                $"Title: {(string.IsNullOrWhiteSpace(item.Title) ? "(empty)" : item.Title)}\n" +
-                $"Opacity: {item.Opacity}\n" +
-                $"TopMost: {item.IsTopMost}",
-                "Window Detail",
+                Stealth.App.Localize("Detail.Handle") + ": 0x" + item.HWnd.ToInt64().ToString("X") + "\n" +
+                Stealth.App.Localize("Detail.Title") + ": " +
+                    (string.IsNullOrWhiteSpace(item.Title) ? Stealth.App.Localize("Detail.Empty") : item.Title) + "\n" +
+                Stealth.App.Localize("Detail.Opacity") + ": " + item.Opacity + "\n" +
+                Stealth.App.Localize("Detail.Topmost") + ": " + item.IsTopMost,
+                Stealth.App.Localize("Detail.Caption"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }

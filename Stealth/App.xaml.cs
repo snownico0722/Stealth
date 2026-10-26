@@ -2,6 +2,7 @@
 using Stealth.Properties;
 using Stealth.ViewModel;
 using System;
+using System.Globalization;
 using System.Windows;
 
 namespace Stealth
@@ -17,6 +18,7 @@ namespace Stealth
         {
             base.OnStartup(e);
 
+            ApplyLanguage(Settings.Default.UiLanguage, false);
             ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             var mainWindow = new MainWindow();
@@ -25,6 +27,40 @@ namespace Stealth
             mainWindow.Show();
 
             SetOverlayEnabled(Settings.Default.OverlayEnabled);
+        }
+
+        public static string CurrentLanguage { get; private set; } = "en-US";
+
+        public static string Localize(string key)
+        {
+            return Current.TryFindResource(key) as string ?? key;
+        }
+
+        public static void ApplyLanguage(string requestedLanguage, bool savePreference = true)
+        {
+            string language = requestedLanguage == "zh-CN" || requestedLanguage == "en-US"
+                ? requestedLanguage
+                : (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "zh" ? "zh-CN" : "en-US");
+            // Resolve before changing resources, avoiding an empty UI on failure.
+            var replacement = new ResourceDictionary
+            {
+                Source = new Uri("/Stealth;component/Languages/Strings." + language + ".xaml", UriKind.Relative)
+            };
+            var merged = Current.Resources.MergedDictionaries;
+            for (int i = merged.Count - 1; i >= 0; i--)
+            {
+                var source = merged[i].Source?.OriginalString;
+                if (source != null && source.Contains("/Strings.") &&
+                    source.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+                    merged.RemoveAt(i);
+            }
+            merged.Add(replacement);
+            CurrentLanguage = language;
+            if (savePreference)
+            {
+                Settings.Default.UiLanguage = language;
+                Settings.Default.Save();
+            }
         }
 
         public void SetOverlayEnabled(bool isEnabled)

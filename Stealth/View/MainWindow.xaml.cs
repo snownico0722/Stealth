@@ -16,8 +16,25 @@ namespace Stealth
         public MainWindow()
         {
             InitializeComponent();
+            UpdateLanguageMenu();
             Closed += (s, e) => ((ViewModelLocator)Application.Current.Resources["Locator"]).Cleanup();
             WeakReferenceMessenger.Default.Register<ShowAboutViewMessage>(this, (recipient, msg) => ((MainWindow)recipient).NotificationMessageReceived(msg));
+        }
+
+        private void UpdateLanguageMenu()
+        {
+            EnglishLanguageMenu.IsChecked = App.CurrentLanguage == "en-US";
+            ChineseLanguageMenu.IsChecked = App.CurrentLanguage == "zh-CN";
+        }
+        private void EnglishLanguageMenu_Click(object sender, RoutedEventArgs e)
+        {
+            App.ApplyLanguage("en-US");
+            UpdateLanguageMenu();
+        }
+        private void ChineseLanguageMenu_Click(object sender, RoutedEventArgs e)
+        {
+            App.ApplyLanguage("zh-CN");
+            UpdateLanguageMenu();
         }
 
         private void NotificationMessageReceived(ShowAboutViewMessage msg)

@@ -1,0 +1,29 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="Menu.File">_File</sys:String>
+    <sys:String x:Key="Menu.Exit">Exit</sys:String>
+    <sys:String x:Key="Menu.Help">_Help</sys:String>
+    <sys:String x:Key="Menu.About">About</sys:String>
+    <sys:String x:Key="Menu.Language">_Language</sys:String>
+    <sys:String x:Key="Filter.Closed">Show closed window</sys:String>
+    <sys:String x:Key="Filter.Empty">Show empty title window</sys:String>
+    <sys:String x:Key="Overlay.Enable">Enable floating overlay</sys:String>
+    <sys:String x:Key="Action.Refresh">Refresh</sys:String>
+    <sys:String x:Key="Action.Detail">Detail</sys:String>
+    <sys:String x:Key="Action.Topmost">Top Most</sys:String>
+    <sys:String x:Key="Status.Ready">Stealth</sys:String>
+    <sys:String x:Key="About.Project">Stealth Project</sys:String>
+    <sys:String x:Key="About.Version">Version</sys:String>
+    <sys:String x:Key="Detail.Handle">Handle</sys:String>
+    <sys:String x:Key="Detail.Title">Title</sys:String>
+    <sys:String x:Key="Detail.Opacity">Opacity</sys:String>
+    <sys:String x:Key="Detail.Topmost">TopMost</sys:String>
+    <sys:String x:Key="Detail.Empty">(empty)</sys:String>
+    <sys:String x:Key="Detail.Caption">Window Detail</sys:String>
+    <sys:String x:Key="Error.EnableLayered">Could not enable WS_EX_LAYERED (Win32 error {0}).</sys:String>
+    <sys:String x:Key="Error.LayeredUnknown">Best-effort opacity update succeeded, but existing layered attributes could not be read (Win32 error {0}). The target may use WPF per-pixel transparency, which can conflict with this update.</sys:String>
+    <sys:String x:Key="Error.SetLayered">SetLayeredWindowAttributes failed (Win32 error {0}).</sys:String>
+    <sys:String x:Key="Error.OriginalUnknown"> Existing layered attributes could not be read (Win32 error {0}); the target may use WPF per-pixel transparency.</sys:String>
+    <sys:String x:Key="Error.Rollback"> Restoring the original window style also failed (Win32 error {0}).</sys:String>
+</ResourceDictionary>

@@ -23,3 +23,8 @@ Thanks to [Symin](https://github.com/syminomega) provides new icon, UI sytle and
 ## License
 [GNU GENERAL PUBLIC LICENSE (GPL)](./LICENSE)\
 (Any further development based on this code should be open-sourced)
+## Languages / 语言
+
+Supports English and Simplified Chinese. The initial language follows Windows; switch later using **Language → English / 简体中文**. The choice is saved per user.
+
+支持英文与简体中文。首次启动自动识别 Windows 语言，也可以在「语言」菜单中手动切换并保存偏好。

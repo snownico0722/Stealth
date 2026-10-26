@@ -58,7 +58,7 @@ namespace Stealth.Core
             {
                 if (!_api.TrySetExtendedStyle(handle, style | LayeredStyle, out var styleError))
                 {
-                    error = $"Could not enable WS_EX_LAYERED (Win32 error {styleError}).";
+                    error = string.Format(Stealth.App.Localize("Error.EnableLayered"), styleError);
                     return false;
                 }
 
@@ -69,22 +69,22 @@ namespace Stealth.Core
             if (_api.TrySetLayeredAttributes(handle, colorKey, alpha, flags, out var alphaError))
             {
                 error = attributesUnknown
-                    ? $"Best-effort opacity update succeeded, but existing layered attributes could not be read (Win32 error {readError}). The target may use WPF per-pixel transparency, which can conflict with this update."
+                    ? string.Format(Stealth.App.Localize("Error.LayeredUnknown"), readError)
                     : null;
                 return true;
             }
 
             var rollbackError = 0;
             var rollbackFailed = enabledLayeredStyle && !_api.TrySetExtendedStyle(handle, style, out rollbackError);
-            error = $"SetLayeredWindowAttributes failed (Win32 error {alphaError}).";
+            error = string.Format(Stealth.App.Localize("Error.SetLayered"), alphaError);
             if (attributesUnknown)
             {
-                error += $" Existing layered attributes could not be read (Win32 error {readError}); the target may use WPF per-pixel transparency.";
+                error += string.Format(Stealth.App.Localize("Error.OriginalUnknown"), readError);
             }
 
             if (rollbackFailed)
             {
-                error += $" Restoring the original window style also failed (Win32 error {rollbackError}).";
+                error += string.Format(Stealth.App.Localize("Error.Rollback"), rollbackError);
             }
 
             return false;

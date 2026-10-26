@@ -6,7 +6,7 @@
         xmlns:ignore="http://www.galasoft.ch/ignore"
         x:Class="Stealth.MainWindow"
         mc:Ignorable="d ignore"
-        Height="600" Width="580" Background="{StaticResource Background.Main}"
+        Height="600" Width="650" Background="{StaticResource Background.Main}"
         Title="Stealth">
 
     <Window.DataContext>
@@ -25,11 +25,15 @@
         <Menu Grid.Row="0" x:Name="MainMenu" IsMainMenu="True" 
               FontSize="14" Background="Transparent" 
               Foreground="{StaticResource Text.Main}">
-            <MenuItem Header="_File">
-                <MenuItem Header="Exit" Command="{Binding ExitCommand}"/>
+            <MenuItem Header="{DynamicResource Menu.File}">
+                <MenuItem Header="{DynamicResource Menu.Exit}" Command="{Binding ExitCommand}"/>
             </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem Header="About" Command="{Binding AboutCommand}"/>
+            <MenuItem Header="{DynamicResource Menu.Help}">
+                <MenuItem Header="{DynamicResource Menu.About}" Command="{Binding AboutCommand}"/>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Menu.Language}">
+                <MenuItem x:Name="EnglishLanguageMenu" Header="English" IsCheckable="True" Click="EnglishLanguageMenu_Click"/>
+                <MenuItem x:Name="ChineseLanguageMenu" Header="简体中文" IsCheckable="True" Click="ChineseLanguageMenu_Click"/>
             </MenuItem>
         </Menu>
         <!--筛选框-->
@@ -45,16 +49,16 @@
             </Grid.ColumnDefinitions>
             <Border BorderThickness="1" BorderBrush="{StaticResource Border.Main}"
                     CornerRadius="4" Grid.ColumnSpan="3" Margin="4,4,0,4"/>
-            <CheckBox x:Name="includeRemovedCheckBox" Content="Show closed window"
+            <CheckBox x:Name="includeRemovedCheckBox" Content="{DynamicResource Filter.Closed}"
                       Grid.Column="0" Margin="8,0,0,0"
                       IsChecked="{Binding includeRemoved, Mode=TwoWay}"/>
-            <CheckBox x:Name="includeEmptyTitleCheckBox" Content="Show empty title window"
+            <CheckBox x:Name="includeEmptyTitleCheckBox" Content="{DynamicResource Filter.Empty}"
                       Grid.Column="1" Margin="4,0"
                       IsChecked="{Binding includeEmptyTitle, Mode=TwoWay}"/>
-            <CheckBox x:Name="overlayEnabledCheckBox" Content="Enable floating overlay"
+            <CheckBox x:Name="overlayEnabledCheckBox" Content="{DynamicResource Overlay.Enable}"
                       Grid.Column="2" Margin="4,0"
                       IsChecked="{Binding IsOverlayEnabled, Mode=TwoWay}"/>
-            <Button Content="Refresh" Command="{Binding RefreshCommand}"
+            <Button Content="{DynamicResource Action.Refresh}" Command="{Binding RefreshCommand}"
                     Grid.Column="3" Margin="4"/>
         </Grid>
         <ListBox Grid.Row="3"
@@ -88,7 +92,7 @@
                                 <Label Margin="4,4,4,0" HorizontalContentAlignment="Left">
                                     <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
                                 </Label>
-                                <Button Content="Detail" Grid.Column="1" Margin="0,4,4,0"
+                                <Button Content="{DynamicResource Action.Detail}" Grid.Column="1" Margin="0,4,4,0"
                                         Command="{Binding Main.DetailCommand, 
                                                   Source={StaticResource Locator}}"
                                         CommandParameter="{Binding}"/>
@@ -99,7 +103,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox Content="Top Most" IsChecked="{Binding IsTopMost, Mode=TwoWay}"
+                                <CheckBox Content="{DynamicResource Action.Topmost}" IsChecked="{Binding IsTopMost, Mode=TwoWay}"
                                           Grid.Column="0" Margin="4,0"/>
                                 <Slider Value="{Binding Opacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Maximum="255" Grid.Column="1"
                                         ToolTip="{Binding OpacityError}"
@@ -134,7 +138,7 @@
             <StatusBarItem Grid.Column="2"/>
             <Separator Grid.Column="3"/>
             <StatusBarItem Grid.Column="4">
-                <TextBlock Text="world"/>
+                <TextBlock Text="{DynamicResource Status.Ready}"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>
