@@ -115,7 +115,9 @@ namespace Stealth.Core
         {
             PInvoke.SetWindowLong(ToHwnd(handle), WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, style);
             var currentStyle = GetExtendedStyle(handle);
-            var succeeded = currentStyle == style;
+            // Only WS_EX_LAYERED is being changed; unrelated flags may change independently.
+            const int layeredStyle = (int)WINDOW_EX_STYLE.WS_EX_LAYERED;
+            var succeeded = (currentStyle & layeredStyle) == (style & layeredStyle);
             errorCode = succeeded ? 0 : Marshal.GetLastWin32Error();
             return succeeded;
         }

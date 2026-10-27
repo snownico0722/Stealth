@@ -71,6 +71,69 @@ namespace Stealth.Core.Tests
         }
 
         [TestMethod]
+        public void ExplicitRestore_OverridesExternalOpacityChange()
+        {
+            var api = new FakeApi { Style = Layered, Transparency = 180, Flags = Alpha };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
+            api.Transparency = 145;
+
+            Assert.IsTrue(state.TryRestore(Hwnd, out var error, userInitiated: true), error);
+            Assert.AreEqual((byte)180, api.Transparency);
+            Assert.IsFalse(state.IsModified(Hwnd));
+        }
+
+        [TestMethod]
+        public void AutomaticRestore_LeavesExternalOpacityChangeAlone()
+        {
+            var api = new FakeApi { Style = Layered, Transparency = 180, Flags = Alpha };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
+            api.Transparency = 145;
+
+            state.RestoreAll();
+            Assert.AreEqual((byte)145, api.Transparency);
+        }
+
+        [TestMethod]
+        public void ExplicitRestore_OverridesExternalTopmostChange()
+        {
+            var api = new FakeApi { Style = Topmost };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetTopMost(Hwnd, false, out _));
+            api.Style |= Topmost;
+
+            Assert.IsTrue(state.TryRestore(Hwnd, out var error, userInitiated: true), error);
+            Assert.AreEqual(Topmost, api.Style & Topmost);
+            Assert.AreEqual(2, api.TopmostCallCount);
+            Assert.IsFalse(state.IsModified(Hwnd));
+        }
+
+        [TestMethod]
+        public void AutomaticRestore_LeavesExternalTopmostChangeAlone()
+        {
+            var api = new FakeApi { Style = Topmost };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetTopMost(Hwnd, false, out _));
+            api.Style |= Topmost;
+
+            state.RestoreAll();
+            Assert.AreEqual(Topmost, api.Style & Topmost);
+            Assert.AreEqual(1, api.TopmostCallCount);
+        }
+
+        [TestMethod]
+        public void ExplicitRestore_CannotInventUnreadableOriginalOpacity()
+        {
+            var api = new FakeApi { Style = Layered, CanRead = false };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 120, out _));
+
+            Assert.IsFalse(state.TryRestore(Hwnd, out var error, userInitiated: true));
+            StringAssert.Contains(error, "exact restoration is unavailable");
+        }
+
+        [TestMethod]
         public void FailedTopmost_IsNotMarkedModified()
         {
             var api = new FakeApi { CanPin = false };
