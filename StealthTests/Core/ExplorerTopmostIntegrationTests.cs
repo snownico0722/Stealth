@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Stealth.Core;
+using Stealth.Model;
 
 namespace Stealth.Core.Tests
 {
@@ -154,6 +155,28 @@ namespace Stealth.Core.Tests
 
                 Assert.IsTrue(accepted && after250,
                     "Explorer baseline failed: check diagnostic flag variants in test output.");
+
+                // Exercise the actual list row -> PropertyChanged -> MainService
+                // path, not just the native API. An Explorer-only UI regression
+                // can otherwise slip past the native integration tests.
+                if (accepted && after250)
+                {
+                    Assert.IsTrue(manager.TryRestore(hwnd, out error), error);
+                    using (var service = new MainService())
+                    {
+                        var row = service.GetWindowListData()
+                            .FirstOrDefault(item => item.HWnd == hwnd && !item.IsRemoved);
+                        Assert.IsNotNull(row, "Explorer HWND was not enumerated by the Stealth window list.");
+                        Assert.IsFalse(row.IsTopMost, "Explorer should begin unpinned for the UI test.");
+                        row.IsTopMost = true; // exactly the data-binding operation on checkbox click
+                        Thread.Sleep(250);
+                        Assert.IsTrue(manager.ReadTopMost(hwnd),
+                            "MainService property-change route failed to pin visible Explorer.");
+                        Assert.IsNull(row.TopMostError, "MainService returned an error: " + row.TopMostError);
+                    } // RestoreAll via MainService.Dispose()
+                    Assert.IsFalse(manager.ReadTopMost(hwnd),
+                        "Closing MainService did not restore Explorer's original topmost state.");
+                }
             }
             finally
             {
