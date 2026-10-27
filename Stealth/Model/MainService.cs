@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Stealth.Model
@@ -18,6 +19,9 @@ namespace Stealth.Model
         private WindowInstanceUtil util;
         private List<WindowInstanceInfo> windowsInstanceList;
         private readonly WindowStateManager _states = WindowStateManager.Shared;
+        private readonly Dictionary<IntPtr, int> _pendingTopmostChecks = new Dictionary<IntPtr, int>();
+        private int _topmostCheckSequence;
+        private bool _disposed;
 
         // window info for view
         public ObservableCollection<WindowInfoItemModel> windowInfoViewList { get; private set; }
@@ -109,6 +113,8 @@ namespace Stealth.Model
 
         public void Dispose()
         {
+            _disposed = true;
+            _pendingTopmostChecks.Clear();
             foreach (var item in windowInfoViewList)
             {
                 item.PropertyChanged -= WindowInfoItemModel_PropertyChanged;
@@ -199,8 +205,59 @@ namespace Stealth.Model
                 {
                     item.TopMostError = null;
                     item.UpdateModificationFromNative(_states.IsModified(item.HWnd));
+                    ScheduleTopmostConfirmation(item, requested);
                 }
             }
+        }
+
+        private void ScheduleTopmostConfirmation(WindowInfoItemModel item, bool expected)
+        {
+            // Explorer and other cross-thread windows can report their updated
+            // style after SetWindowPos returns. Do not immediately revert a
+            // checkbox just because that instantaneous readback lagged.
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null) return;
+
+            IntPtr hwnd = item.HWnd;
+            int sequence = ++_topmostCheckSequence;
+            _pendingTopmostChecks[hwnd] = sequence;
+            var timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
+            {
+                Interval = TimeSpan.FromMilliseconds(180)
+            };
+            EventHandler tick = null;
+            tick = (sender, args) =>
+            {
+                timer.Stop();
+                timer.Tick -= tick;
+                if (_disposed ||
+                    !_pendingTopmostChecks.TryGetValue(hwnd, out int latest) ||
+                    latest != sequence ||
+                    item.IsRemoved || item.HWnd != hwnd || item.IsTopMost != expected)
+                    return;
+                _pendingTopmostChecks.Remove(hwnd);
+
+                bool actual = _states.ReadTopMost(hwnd);
+                if (actual != expected)
+                {
+                    // One bounded retry of the same user-requested Win32
+                    // operation. No new restrictions or background enforcement.
+                    bool accepted = _states.TrySetTopMost(hwnd, expected, out string error);
+                    actual = _states.ReadTopMost(hwnd);
+                    if (!accepted || actual != expected)
+                    {
+                        _states.DiscardUnconfirmedTopMost(hwnd, expected);
+                        item.UpdateTopMostFromNative(actual);
+                        item.UpdateModificationFromNative(_states.IsModified(hwnd));
+                        item.TopMostError = !string.IsNullOrEmpty(error) ? error :
+                            "Windows did not apply the requested always-on-top state.";
+                        return;
+                    }
+                }
+                item.TopMostError = null;
+            };
+            timer.Tick += tick;
+            timer.Start();
         }
 
         private void WindowInfoItemModel_PropertyChanged(object sender, PropertyChangedEventArgs e)

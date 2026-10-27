@@ -41,10 +41,20 @@ namespace Stealth.Core
                     0, 0, 0, 0, SET_WINDOW_POS_FLAGS.SWP_NOMOVE |
                     SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
             }
-            bool actual = (GetExtendedStyle(hwnd) & (int)WINDOW_EX_STYLE.WS_EX_TOPMOST) != 0;
-            error = succeeded && actual == enabled ? null :
-                "Always-on-top was not changed (Win32 error " + Marshal.GetLastWin32Error() + ").";
-            return error == null;
+            // SetWindowPos's BOOL reports whether the request was accepted.
+            // The target may update its extended style after cross-thread window
+            // processing. Verifying it synchronously here caused a regression for
+            // Explorer: the UI could immediately undo a successfully accepted pin.
+            if (!succeeded)
+            {
+                int win32Error = Marshal.GetLastWin32Error();
+                error = "SetWindowPos failed (Win32 error " + win32Error + ").";
+                return false;
+            }
+            // MainService checks the actual WS_EX_TOPMOST state after the input
+            // event, with at most one retry if the first request did not stick.
+            error = null;
+            return true;
         }
     }
 
@@ -144,6 +154,19 @@ namespace Stealth.Core
             state.LastTopmost = enabled;
             entries[hwnd] = state;
             return true;
+        }
+
+        // Only forget a pending topmost change after deferred verification has
+        // established that Windows never applied it. Preserve any opacity state.
+        internal void DiscardUnconfirmedTopMost(IntPtr hwnd, bool expected)
+        {
+            if (entries.TryGetValue(hwnd, out var state) &&
+                state.ChangedTopmost && state.LastTopmost == expected &&
+                ReadTopMost(hwnd) != expected)
+            {
+                state.ChangedTopmost = false;
+                if (!state.ChangedOpacity) entries.Remove(hwnd);
+            }
         }
 
         internal bool TryRestore(IntPtr hwnd, out string error)

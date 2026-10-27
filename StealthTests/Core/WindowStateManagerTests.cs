@@ -90,6 +90,29 @@ namespace Stealth.Core.Tests
         }
 
         [TestMethod]
+        public void DelayedTopmostApplication_CanBeConfirmedAfterTheApiReturns()
+        {
+            var api = new FakeApi { DelayTopmostStyle = true };
+            var state = new WindowStateManager(api);
+            // Windows accepted the request, but has not updated the style yet.
+            Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
+            Assert.IsFalse(state.ReadTopMost(Hwnd));
+            api.ApplyPendingTopmost();
+            Assert.IsTrue(state.ReadTopMost(Hwnd));
+            Assert.IsTrue(state.IsModified(Hwnd));
+        }
+
+        [TestMethod]
+        public void UnconfirmedTopmost_IsNotRetainedAsModified()
+        {
+            var api = new FakeApi { DelayTopmostStyle = true };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
+            state.DiscardUnconfirmedTopMost(Hwnd, true);
+            Assert.IsFalse(state.IsModified(Hwnd));
+        }
+
+        [TestMethod]
         public void RecycledHandle_IsNotRestored()
         {
             var api = new FakeApi();
@@ -122,6 +145,12 @@ namespace Stealth.Core.Tests
             internal uint Pid = 44, Tid = 17, Color, Flags;
             internal byte Transparency = 255;
             internal bool CanRead = true, CanPin = true, DidWriteTransparency, FailOriginalTransparencyRestore;
+            internal bool DelayTopmostStyle, PendingTopmostValue;
+            internal void ApplyPendingTopmost()
+            {
+                Style = PendingTopmostValue ? Style | Topmost : Style & ~Topmost;
+                DelayTopmostStyle = false;
+            }
             public bool IsWindow(IntPtr hwnd) => true;
             public void GetIdentity(IntPtr hwnd, out uint pid, out uint tid) { pid = Pid; tid = Tid; }
             public int GetExtendedStyle(IntPtr hwnd) => Style;
@@ -145,7 +174,12 @@ namespace Stealth.Core.Tests
             public bool TrySetTopMost(IntPtr hwnd, bool enabled, out string error)
             {
                 error = CanPin ? null : "Access denied";
-                if (CanPin) Style = enabled ? Style | Topmost : Style & ~Topmost;
+                if (CanPin)
+                {
+                    PendingTopmostValue = enabled;
+                    if (!DelayTopmostStyle)
+                        Style = enabled ? Style | Topmost : Style & ~Topmost;
+                }
                 return CanPin;
             }
         }
