@@ -212,52 +212,67 @@ namespace Stealth.Model
 
         private void ScheduleTopmostConfirmation(WindowInfoItemModel item, bool expected)
         {
-            // Explorer and other cross-thread windows can report their updated
-            // style after SetWindowPos returns. Do not immediately revert a
-            // checkbox just because that instantaneous readback lagged.
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null) return;
 
             IntPtr hwnd = item.HWnd;
             int sequence = ++_topmostCheckSequence;
             _pendingTopmostChecks[hwnd] = sequence;
+
+            // Wait for the target application's initial reaction before
+            // reissuing a request. Check a second time AFTER a retry instead
+            // of discarding its result in the same tick.
+            var verification = new TopmostConfirmation(expected);
             var timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
             {
-                Interval = TimeSpan.FromMilliseconds(180)
+                Interval = TimeSpan.FromMilliseconds(350)
             };
+            string retryError = null;
             EventHandler tick = null;
             tick = (sender, args) =>
             {
                 timer.Stop();
-                timer.Tick -= tick;
                 if (_disposed ||
                     !_pendingTopmostChecks.TryGetValue(hwnd, out int latest) ||
                     latest != sequence ||
-                    item.IsRemoved || item.HWnd != hwnd || item.IsTopMost != expected)
-                    return;
-                _pendingTopmostChecks.Remove(hwnd);
-
-                bool actual = _states.ReadTopMost(hwnd);
-                if (actual != expected)
+                    item.IsRemoved || item.HWnd != hwnd ||
+                    item.IsTopMost != expected)
                 {
-                    // One bounded retry of the same user-requested Win32
-                    // operation. No new restrictions or background enforcement.
-                    bool accepted = _states.TrySetTopMost(hwnd, expected, out string error);
-                    actual = _states.ReadTopMost(hwnd);
-                    if (!accepted || actual != expected)
-                    {
-                        _states.DiscardUnconfirmedTopMost(hwnd, expected);
-                        item.UpdateModificationFromNative(_states.IsModified(hwnd));
-                        item.TopMostError = !string.IsNullOrEmpty(error) ? error :
-                            "Windows did not apply the requested always-on-top state.";
-                        // Do not flip IsTopMost from this delayed check. The
-                        // checkbox records the user's request, not a lock
-                        // that may be undone without consent.
-                        return;
-                    }
+                    timer.Tick -= tick;
+                    return;
+                }
+
+                var result = verification.Observe(_states.ReadTopMost(hwnd), () =>
+                {
+                    if (!_states.TrySetTopMost(hwnd, expected, out retryError))
+                        item.TopMostError = retryError;
+                });
+                if (result == TopmostConfirmationResult.RetryIssued)
+                {
+                    // The target is allowed to process the SECOND SetWindowPos
+                    // before its result is verified. There is no repeating
+                    // enforcement and at most one retry per click.
+                    timer.Interval = TimeSpan.FromMilliseconds(300);
+                    timer.Start();
+                    return;
+                }
+
+                timer.Tick -= tick;
+                _pendingTopmostChecks.Remove(hwnd);
+                if (result == TopmostConfirmationResult.Failed)
+                {
+                    _states.DiscardUnconfirmedTopMost(hwnd, expected);
+                    item.UpdateModificationFromNative(_states.IsModified(hwnd));
+                    item.TopMostError = !string.IsNullOrEmpty(retryError)
+                        ? retryError
+                        : "Windows did not apply the requested always-on-top state.";
+                    // Keep IsTopMost as requested; never silently flip the checkbox.
+                }
+                else
+                {
+                    item.TopMostError = null;
                     item.UpdateModificationFromNative(_states.IsModified(hwnd));
                 }
-                item.TopMostError = null;
             };
             timer.Tick += tick;
             timer.Start();
