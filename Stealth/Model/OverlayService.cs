@@ -204,7 +204,7 @@ namespace Stealth.Model
                 }
 
                 var alpha = (byte)Math.Max(byte.MinValue, Math.Min(byte.MaxValue, opacity));
-                var applied = targetWindow.TrySetOpacity(alpha, out var error);
+                var applied = WindowStateManager.Shared.TrySetOpacity(_currentTargetHandle, alpha, out var error);
                 _overlayWindow.SetOpacityError(error);
                 if (applied)
                 {

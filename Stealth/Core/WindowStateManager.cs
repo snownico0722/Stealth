@@ -117,6 +117,14 @@ namespace Stealth.Core
             };
         }
 
+        internal byte ReadOpacity(IntPtr hwnd)
+        {
+            return api.TryGetLayeredAttributes(hwnd, out _, out byte alpha, out _, out _) ? alpha : (byte)255;
+        }
+
+        internal bool ReadTopMost(IntPtr hwnd) =>
+            (api.GetExtendedStyle(hwnd) & Topmost) != 0;
+
         internal bool IsModified(IntPtr hwnd) =>
             entries.TryGetValue(hwnd, out var state) && (state.ChangedOpacity || state.ChangedTopmost);
 

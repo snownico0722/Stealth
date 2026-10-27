@@ -17,6 +17,7 @@ namespace Stealth.Model
         // window info from native user32
         private WindowInstanceUtil util;
         private List<WindowInstanceInfo> windowsInstanceList;
+        private readonly WindowStateManager _states = WindowStateManager.Shared;
 
         // window info for view
         public ObservableCollection<WindowInfoItemModel> windowInfoViewList { get; private set; }
@@ -63,7 +64,7 @@ namespace Stealth.Model
 
                 }
                 matchedTargetItem.CopyFrom(windowInsatnceItem);
-
+                matchedTargetItem.UpdateModificationFromNative(_states.IsModified(matchedTargetItem.HWnd));
                 matchedTargetItem.IsRemoved = false;
             }
         }
@@ -74,6 +75,7 @@ namespace Stealth.Model
             //please note that the UI (ListBoxItem) content is not refershed if updating nested elements
             DisposeWindowSnapshots();
 
+            _states.ForgetClosed();
             windowsInstanceList = util.RetrieveAllWindows(true);
             UpdateWindowInfoItemModelList(windowInfoViewList, windowsInstanceList);
         }
@@ -100,6 +102,7 @@ namespace Stealth.Model
                 item.PropertyChanged -= WindowInfoItemModel_PropertyChanged;
             }
 
+            _states.RestoreAll();
             DisposeWindowSnapshots();
         }
 
@@ -130,13 +133,14 @@ namespace Stealth.Model
             if (nativeWindow != null)
             {
                 var opacity = (byte)Math.Max(byte.MinValue, Math.Min(byte.MaxValue, item.Opacity));
-                var applied = nativeWindow.TrySetOpacity(opacity, out var diagnostic);
+                var applied = _states.TrySetOpacity(item.HWnd, opacity, out var diagnostic);
                 if (!applied)
                 {
                     // The slider changed optimistically; restore the value from
                     // the last native snapshot if Windows denied the change.
-                    item.UpdateOpacityFromNative(nativeWindow.BAlpha);
+                    item.UpdateOpacityFromNative(_states.ReadOpacity(item.HWnd));
                 }
+                if (applied) item.UpdateModificationFromNative(_states.IsModified(item.HWnd));
                 item.OpacityError = diagnostic;
             }
         }
@@ -154,8 +158,17 @@ namespace Stealth.Model
             var nativeWindow = windowsInstanceList.SingleOrDefault(window => (IntPtr)window.HWnd == item.HWnd);
             if (nativeWindow != null)
             {
-                nativeWindow.IsTopMost = item.IsTopMost;
-                nativeWindow.CommitChanges();
+                var requested = item.IsTopMost;
+                if (!_states.TrySetTopMost(item.HWnd, requested, out var error))
+                {
+                    item.UpdateTopMostFromNative(_states.ReadTopMost(item.HWnd));
+                    item.TopMostError = error;
+                }
+                else
+                {
+                    item.TopMostError = null;
+                    item.UpdateModificationFromNative(_states.IsModified(item.HWnd));
+                }
             }
         }
 

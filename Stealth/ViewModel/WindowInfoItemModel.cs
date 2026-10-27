@@ -81,7 +81,26 @@ namespace Stealth.ViewModel
             set { SetProperty(ref _isRemoved, value); }
         }
 
-        private Process _process;
+        private string _topMostError;
+        public string TopMostError
+        {
+            get { return _topMostError; }
+            set { SetProperty(ref _topMostError, value); }
+        }
+
+        internal void UpdateTopMostFromNative(bool value)
+        {
+            IsUpdatingFromNative = true;
+            try { IsTopMost = value; }
+            finally { IsUpdatingFromNative = false; }
+        }
+
+        internal void UpdateModificationFromNative(bool value)
+        {
+            IsUpdatingFromNative = true;
+            try { IsModified = value; }
+            finally { IsUpdatingFromNative = false; }
+        }
 
         internal bool IsUpdatingFromNative { get; private set; }
 
@@ -112,7 +131,6 @@ namespace Stealth.ViewModel
                 Title = nativeSource.Title;
                 Opacity = nativeSource.BAlpha;
                 IsTopMost = nativeSource.IsTopMost;
-                _process = nativeSource.process;
                 ProcIcon = LoadBitmap(nativeSource.iconBitmap);
             }
             finally

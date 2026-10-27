@@ -37,6 +37,11 @@ namespace Stealth.Core
 
             var attributesLoaded = _api.TryGetLayeredAttributes(handle, out colorKey, out currentAlpha, out existingFlags, out var readError);
             var attributesUnknown = isLayered && !attributesLoaded;
+            if (attributesUnknown)
+            {
+                error = "Original layered transparency is unreadable; the operation was blocked.";
+                return false;
+            }
 
             if (!isLayered)
             {
