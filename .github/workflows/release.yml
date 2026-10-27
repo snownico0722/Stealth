@@ -89,5 +89,5 @@ jobs:
         run: |
           test -f release/Stealth.exe
           (cd release && sha256sum -c SHA256SUMS.txt)
-          gh release create v0.10.1 release/Stealth.exe release/SHA256SUMS.txt \
-            --title "Stealth 0.10.1 — Remove Extra Restrictions" --target "$GITHUB_SHA" --notes-file RELEASE_NOTES_0.10.1.md --latest
+          gh release create v0.10.2 release/Stealth.exe release/SHA256SUMS.txt \
+            --title "Stealth 0.10.2 — Explorer Topmost Regression Fix" --target "$GITHUB_SHA" --notes-file RELEASE_NOTES_0.10.2.md --latest
