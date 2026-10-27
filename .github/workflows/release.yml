@@ -22,8 +22,16 @@ jobs:
         run: dotnet restore Stealth.sln
       - name: Build Release
         run: dotnet build Stealth.sln --configuration Release --no-restore
-      - name: Test Release
+      - name: Test Release and WPF raster output
+        env:
+          STEALTH_VISUAL_TEST_DIR: ${{ github.workspace }}\\visual-regression
         run: dotnet test Stealth.sln --configuration Release --no-build
+      - name: Upload visual regression sample
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stealth-rendered-title
+          path: visual-regression/*.png
+          if-no-files-found: error
       - name: Package and smoke test single EXE
         shell: pwsh
         run: |

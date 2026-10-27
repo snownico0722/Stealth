@@ -1,5 +1,6 @@
 
 using System;
+using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
@@ -33,6 +34,15 @@ namespace Stealth.View.Tests
                     Assert.AreEqual(TextTrimming.CharacterEllipsis, layout.Trimming);
                     var image = new RenderTargetBitmap(160, 36, 96, 96, PixelFormats.Pbgra32);
                     image.Render(control);
+                    var path = Environment.GetEnvironmentVariable("STEALTH_VISUAL_TEST_DIR");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        Directory.CreateDirectory(path);
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(image));
+                        using (var file = File.Create(Path.Combine(path, "two-line-ellipsis-160px.png")))
+                            encoder.Save(file);
+                    }
                     var pixels = new byte[160 * 36 * 4];
                     image.CopyPixels(pixels, 160 * 4, 0);
                     for (int i = 3; i < pixels.Length; i += 4)
