@@ -78,12 +78,28 @@ namespace Stealth.Core.Tests
             Assert.IsFalse(state.IsModified(Hwnd));
         }
 
+        [TestMethod]
+        public void PartialRestore_CanBeRetriedWithoutRestoringAlreadyRevertedTopmost()
+        {
+            var api = new FakeApi { Style = Layered, Transparency = 180, Flags = Alpha };
+            var state = new WindowStateManager(api, 999);
+            Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
+            api.FailOriginalTransparencyRestore = true;
+            Assert.IsFalse(state.TryRestore(Hwnd, out _));
+            Assert.AreEqual(0, api.Style & Topmost);
+            Assert.IsTrue(state.IsModified(Hwnd));
+            api.FailOriginalTransparencyRestore = false;
+            Assert.IsTrue(state.TryRestore(Hwnd, out _));
+            Assert.IsFalse(state.IsModified(Hwnd));
+        }
+
         private sealed class FakeApi : IWindowStateApi
         {
             internal int Style;
             internal uint Pid = 44, Tid = 17, Color, Flags;
             internal byte Transparency = 255;
-            internal bool CanRead = true, CanPin = true, DidWriteTransparency;
+            internal bool CanRead = true, CanPin = true, DidWriteTransparency, FailOriginalTransparencyRestore;
             public bool IsWindow(IntPtr hwnd) => true;
             public void GetIdentity(IntPtr hwnd, out uint pid, out uint tid) { pid = Pid; tid = Tid; }
             public int GetExtendedStyle(IntPtr hwnd) => Style;
@@ -97,6 +113,10 @@ namespace Stealth.Core.Tests
             }
             public bool TrySetLayeredAttributes(IntPtr hwnd, uint key, byte alpha, uint flags, out int error)
             {
+                if (FailOriginalTransparencyRestore && alpha == 180) {
+                    error = 5;
+                    return false;
+                }
                 Color = key; Transparency = alpha; Flags = flags; DidWriteTransparency = true;
                 error = 0; return true;
             }

@@ -50,7 +50,8 @@ namespace Stealth.Model
             _overlayWindow.PositionRefreshRequested += OverlayWindow_PositionRefreshRequested;
             _overlayWindow.Show();
             _overlayWindow.Hide();
-            try { _watcher = new WindowEventWatcher(Application.Current.Dispatcher, RefreshFromEvent); }
+            try { _watcher = new WindowEventWatcher(Application.Current.Dispatcher, RefreshFromEvent,
+                () => _currentTargetHandle); }
             catch (System.ComponentModel.Win32Exception)
             {
                 // Fallback polling remains available if a global hook is denied.

@@ -15,6 +15,7 @@ namespace Stealth.Core
         private readonly Dispatcher dispatcher;
         private readonly DispatcherTimer debounce;
         private readonly Action refresh;
+        private readonly Func<IntPtr> currentTarget;
         private readonly WinEventProc callback;
         private IntPtr foregroundHook, lifetimeHook, positionHook;
         private bool disposed;
@@ -30,10 +31,11 @@ namespace Stealth.Core
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool UnhookWinEvent(IntPtr hook);
 
-        internal WindowEventWatcher(Dispatcher dispatcher, Action refresh)
+        internal WindowEventWatcher(Dispatcher dispatcher, Action refresh, Func<IntPtr> currentTarget)
         {
             this.dispatcher = dispatcher;
             this.refresh = refresh;
+            this.currentTarget = currentTarget;
             debounce = new DispatcherTimer(DispatcherPriority.Background, dispatcher) {
                 Interval = TimeSpan.FromMilliseconds(60)
             };
@@ -54,6 +56,8 @@ namespace Stealth.Core
             int objectId, int childId, uint thread, uint time)
         {
             if (disposed || hwnd == IntPtr.Zero || objectId != 0 || childId != 0) return;
+            // Movement of unrelated windows should never trigger a layout pass.
+            if (kind != Foreground && hwnd != currentTarget()) return;
             // Events are delivered to the installing thread. Marshal defensively
             // for unusual accessibility providers.
             dispatcher.BeginInvoke((Action)(() => {

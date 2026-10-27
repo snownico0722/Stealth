@@ -60,8 +60,17 @@ namespace Stealth.Core
             if (monitor == IntPtr.Zero) return;
             var info = new MonitorInfo { Size = (uint)Marshal.SizeOf(typeof(MonitorInfo)) };
             if (!GetMonitorInfo(monitor, ref info)) return;
-            x = Math.Max(info.Work.Left, Math.Min(x, info.Work.Right - width));
-            y = Math.Max(info.Work.Top, Math.Min(y, info.Work.Bottom - height));
+            ClampToBounds(x, y, width, height,
+                info.Work.Left, info.Work.Top, info.Work.Right, info.Work.Bottom,
+                out x, out y);
+        }
+
+        // Pure geometry logic: testable without depending on a particular monitor.
+        internal static void ClampToBounds(int desiredX, int desiredY, int width, int height,
+            int left, int top, int right, int bottom, out int x, out int y)
+        {
+            x = Math.Max(left, Math.Min(desiredX, Math.Max(left, right - width)));
+            y = Math.Max(top, Math.Min(desiredY, Math.Max(top, bottom - height)));
         }
 
         internal static void Move(IntPtr hwnd, int x, int y)

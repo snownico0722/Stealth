@@ -94,7 +94,8 @@
                             <ContextMenu>
                                 <MenuItem Header="{DynamicResource Action.Restore}"
                                           Command="{Binding Main.RestoreCommand, Source={StaticResource Locator}}"
-                                          CommandParameter="{Binding}"/>
+                                          CommandParameter="{Binding}"
+                                          IsEnabled="{Binding IsModified}"/>
                             </ContextMenu>
                         </Border.ContextMenu>
                         <Grid MinHeight="80">
