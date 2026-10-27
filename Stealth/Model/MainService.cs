@@ -196,17 +196,17 @@ namespace Stealth.Model
             if (nativeWindow != null)
             {
                 var requested = item.IsTopMost;
-                if (!_states.TrySetTopMost(item.HWnd, requested, out var error))
-                {
-                    item.UpdateTopMostFromNative(_states.ReadTopMost(item.HWnd));
-                    item.TopMostError = error;
-                }
-                else
-                {
-                    item.TopMostError = null;
+                // Keep the user's checkbox intent until they change it or the
+                // list is explicitly refreshed. A failed or delayed readback
+                // should NOT silently undo an Explorer pin request.
+                bool accepted = _states.TrySetTopMost(item.HWnd, requested, out var error);
+                item.TopMostError = accepted ? null : error;
+                if (accepted)
                     item.UpdateModificationFromNative(_states.IsModified(item.HWnd));
-                    ScheduleTopmostConfirmation(item, requested);
-                }
+
+                // Confirm later, including when the first Win32 request failed.
+                // Retry at most once; never repeatedly force a window on top.
+                ScheduleTopmostConfirmation(item, requested);
             }
         }
 
@@ -247,12 +247,15 @@ namespace Stealth.Model
                     if (!accepted || actual != expected)
                     {
                         _states.DiscardUnconfirmedTopMost(hwnd, expected);
-                        item.UpdateTopMostFromNative(actual);
                         item.UpdateModificationFromNative(_states.IsModified(hwnd));
                         item.TopMostError = !string.IsNullOrEmpty(error) ? error :
                             "Windows did not apply the requested always-on-top state.";
+                        // Do not flip IsTopMost from this delayed check. The
+                        // checkbox records the user's request, not a lock
+                        // that may be undone without consent.
                         return;
                     }
+                    item.UpdateModificationFromNative(_states.IsModified(hwnd));
                 }
                 item.TopMostError = null;
             };
