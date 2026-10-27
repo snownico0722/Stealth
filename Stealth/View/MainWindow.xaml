@@ -19,23 +19,35 @@
             <RowDefinition Height="30"/>
             <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="24"/>
         </Grid.RowDefinitions>
-        <!--菜单栏-->
-        <Menu Grid.Row="0" x:Name="MainMenu" IsMainMenu="True" 
-              FontSize="14" Background="Transparent" 
-              Foreground="{StaticResource Text.Main}">
-            <MenuItem Header="{DynamicResource Menu.File}">
-                <MenuItem Header="{DynamicResource Menu.Exit}" Command="{Binding ExitCommand}"/>
-            </MenuItem>
-            <MenuItem Header="{DynamicResource Menu.Help}">
-                <MenuItem Header="{DynamicResource Menu.About}" Command="{Binding AboutCommand}"/>
-            </MenuItem>
-            <MenuItem Header="{DynamicResource Menu.Language}">
-                <MenuItem x:Name="EnglishLanguageMenu" Header="English" IsCheckable="True" Click="EnglishLanguageMenu_Click"/>
-                <MenuItem x:Name="ChineseLanguageMenu" Header="简体中文" IsCheckable="True" Click="ChineseLanguageMenu_Click"/>
-            </MenuItem>
-        </Menu>
+        <!-- The filtered count lives at the right edge of the menu strip. -->
+        <DockPanel Grid.Row="0" LastChildFill="True">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                        Margin="8,0,12,0" VerticalAlignment="Center"
+                        TextElement.FontSize="13"
+                        TextElement.Foreground="{StaticResource Text.Main}">
+                <TextBlock Text="{DynamicResource WindowCount.Showing}" Margin="0,0,4,0"/>
+                <TextBlock Text="{Binding VisibleWindowCount}" FontWeight="SemiBold"/>
+                <TextBlock Text="{DynamicResource WindowCount.Between}" Margin="6,0,6,0"/>
+                <TextBlock Text="{Binding TotalWindowCount}" FontWeight="SemiBold"/>
+                <TextBlock Text="{DynamicResource WindowCount.Unit}" Margin="4,0,0,0"/>
+            </StackPanel>
+            <Menu x:Name="MainMenu" IsMainMenu="True"
+                  FontSize="14" Background="Transparent"
+                  Foreground="{StaticResource Text.Main}">
+                <MenuItem Header="{DynamicResource Menu.Settings}">
+                    <MenuItem Header="{DynamicResource Menu.Language}">
+                        <MenuItem x:Name="EnglishLanguageMenu" Header="English"
+                                  IsCheckable="True" Click="EnglishLanguageMenu_Click"/>
+                        <MenuItem x:Name="ChineseLanguageMenu" Header="简体中文"
+                                  IsCheckable="True" Click="ChineseLanguageMenu_Click"/>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Header="{DynamicResource Menu.About}" Command="{Binding AboutCommand}"/>
+                    <MenuItem Header="{DynamicResource Menu.Exit}" Command="{Binding ExitCommand}"/>
+                </MenuItem>
+            </Menu>
+        </DockPanel>
         <!--筛选框-->
         <TextBox Grid.Row="1" x:Name="textFilterInput" Margin="4,2,4,0"
                  Text="{Binding TitleFilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
@@ -65,22 +77,29 @@
                   ItemsSource="{Binding WindowsView}"
                  HorizontalContentAlignment="Stretch"
                   ScrollViewer.CanContentScroll="True"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.PanningMode="VerticalOnly"
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border Background="{StaticResource Background.Block}" 
                             BorderBrush="{StaticResource Border.Main}"
                             BorderThickness="1" Margin="0,2"
                             CornerRadius="8" >
-                        <Grid Height="72">
+                        <Grid MinHeight="80">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="64"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto" MinHeight="44"/>
+                                <RowDefinition Height="Auto" MinHeight="36"/>
                             </Grid.RowDefinitions>
                             <!--缩略图-->
                             <Image Source="{Binding ProcIcon}" Grid.RowSpan="2" Margin="8,8,4,8"/>
@@ -89,9 +108,20 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
                                 </Grid.ColumnDefinitions>
-                                <Label Margin="4,4,4,0" HorizontalContentAlignment="Left">
-                                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap"/>
-                                </Label>
+                                <!-- The border preserves the original title-strip styling.
+                                     A finite star column + disabled horizontal scrolling lets
+                                     long paths wrap, then trim after the second line. -->
+                                <Border Grid.Column="0" Margin="4,4,4,0" Padding="5,2,4,2"
+                                        Background="{StaticResource Background.Main}"
+                                        CornerRadius="4" ClipToBounds="True">
+                                    <TextBlock Text="{Binding Title}" ToolTip="{Binding Title}"
+                                               Foreground="{StaticResource Text.Main}"
+                                               FontSize="14"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="2"/>
+                                </Border>
                                 <Button Content="{DynamicResource Action.Detail}" Grid.Column="1" Margin="0,4,4,0"
                                         Command="{Binding Main.DetailCommand, 
                                                   Source={StaticResource Locator}}"
@@ -116,31 +146,6 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <!--状态栏-->
-        <StatusBar x:Name="MainStatus" Grid.Row="4">
-            <StatusBar.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="auto"/>
-                            <ColumnDefinition Width="100"/>
-                        </Grid.ColumnDefinitions>
-                    </Grid>
-                </ItemsPanelTemplate>
-            </StatusBar.ItemsPanel>
-            <StatusBarItem Grid.Column="0">
-                <TextBlock Text="{Binding windowsInfoItemList.Count}"/>
-            </StatusBarItem>
-            <Separator Grid.Column="1"/>
-            <StatusBarItem Grid.Column="2"/>
-            <Separator Grid.Column="3"/>
-            <StatusBarItem Grid.Column="4">
-                <TextBlock Text="{DynamicResource Status.Ready}"/>
-            </StatusBarItem>
-        </StatusBar>
     </Grid>
 
 </Window>

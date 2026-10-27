@@ -44,3 +44,12 @@ Download this fork's official builds at [Releases](https://github.com/snownico07
 The app and its managed dependencies are combined in one executable via Costura.Fody. No companion DLLs are needed, but Windows must have **.NET Framework 4.7.2 or newer** installed.
 
 程序的托管依赖已嵌入单个 EXE 中，下载即可运行，无需放置额外 DLL。电脑仍需安装 .NET Framework 4.7.2 或以上版本。
+
+## v0.9.1 interface refinement / 界面改进
+
+- Visible/total window counts appear at the top right and update with filtering.
+- All menu actions are consolidated under **Settings / 设置**.
+- Long window titles wrap to two lines and then show an ellipsis; hover for the complete text. The window list never scrolls horizontally.
+- The bottom status bar was removed.
+
+窗口统计移至菜单右上角，菜单统一为「设置」；过长的窗口标题至多显示两行，超出以省略号收尾，悬停可查看完整标题，并禁用横向滚动。

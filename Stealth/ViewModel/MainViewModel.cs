@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -26,6 +27,17 @@ namespace Stealth.ViewModel
         public ObservableCollection<WindowInfoItemModel> windowsInfoItemList { get; }
         public ICollectionView WindowsView { get; }
 
+        // Total includes remembered/closed window records, like the old status
+        // bar; the visible count follows the active collection-view filter.
+        public int VisibleWindowCount => WindowsView.Cast<object>().Count();
+        public int TotalWindowCount => windowsInfoItemList.Count;
+
+        private void RefreshFilteredWindowCount()
+        {
+            WindowsView.Refresh();
+            OnPropertyChanged(nameof(VisibleWindowCount));
+        }
+
         private string _titleFilterText;
         public string TitleFilterText
         {
@@ -34,7 +46,7 @@ namespace Stealth.ViewModel
             {
                 if (SetProperty(ref _titleFilterText, value))
                 {
-                    WindowsView.Refresh();
+                    RefreshFilteredWindowCount();
                 }
             }
         }
@@ -47,7 +59,7 @@ namespace Stealth.ViewModel
             {
                 if (SetProperty(ref _includeEmptyTitle, value))
                 {
-                    WindowsView.Refresh();
+                    RefreshFilteredWindowCount();
                 }
             }
         }
@@ -60,7 +72,7 @@ namespace Stealth.ViewModel
             {
                 if (SetProperty(ref _includeRemoved, value))
                 {
-                    WindowsView.Refresh();
+                    RefreshFilteredWindowCount();
                 }
             }
         }
@@ -162,7 +174,8 @@ namespace Stealth.ViewModel
         private void RefreshWindows()
         {
             _mainService.RefreshWindowData();
-            WindowsView.Refresh();
+            RefreshFilteredWindowCount();
+            OnPropertyChanged(nameof(TotalWindowCount));
         }
 
         ////public override void Cleanup()

@@ -56,6 +56,54 @@ namespace Stealth.ViewModel.Tests
         }
 
         [TestMethod]
+        public void WindowCounts_TrackFilteringAndRefresh()
+        {
+            var active = new WindowInfoItemModel { Title = "Chrome" };
+            var other = new WindowInfoItemModel { Title = "Notepad" };
+            var closed = new WindowInfoItemModel { Title = "Closed", IsRemoved = true };
+            var noTitle = new WindowInfoItemModel { Title = string.Empty };
+            var service = new FakeMainService(active, other, closed, noTitle);
+            var viewModel = new MainViewModel(service);
+
+            Assert.AreEqual(4, viewModel.TotalWindowCount);
+            Assert.AreEqual(2, viewModel.VisibleWindowCount);
+
+            viewModel.TitleFilterText = "CHRO";
+            Assert.AreEqual(1, viewModel.VisibleWindowCount);
+            viewModel.TitleFilterText = null;
+            viewModel.includeRemoved = true;
+            viewModel.includeEmptyTitle = true;
+            Assert.AreEqual(4, viewModel.VisibleWindowCount);
+
+            viewModel.includeRemoved = false;
+            viewModel.includeEmptyTitle = false;
+            service.OnRefresh = () => active.IsRemoved = true;
+            viewModel.RefreshCommand.Execute(null);
+            Assert.AreEqual(1, viewModel.VisibleWindowCount);
+            Assert.AreEqual(4, viewModel.TotalWindowCount);
+        }
+
+        [TestMethod]
+        public void WindowCounts_RaiseChangeNotifications()
+        {
+            var item = new WindowInfoItemModel { Title = "Chrome" };
+            var service = new FakeMainService(item);
+            var viewModel = new MainViewModel(service);
+            var notifications = new System.Collections.Generic.List<string>();
+            viewModel.PropertyChanged += (sender, e) => notifications.Add(e.PropertyName);
+
+            viewModel.TitleFilterText = "NO MATCH";
+            Assert.AreEqual(0, viewModel.VisibleWindowCount);
+            Assert.IsTrue(notifications.Contains(nameof(MainViewModel.VisibleWindowCount)));
+
+            notifications.Clear();
+            service.OnRefresh = () => service.GetWindowListData().Add(new WindowInfoItemModel { Title = "Another" });
+            viewModel.RefreshCommand.Execute(null);
+            Assert.AreEqual(2, viewModel.TotalWindowCount);
+            Assert.IsTrue(notifications.Contains(nameof(MainViewModel.TotalWindowCount)));
+        }
+
+        [TestMethod]
         public void UpdateOpacityFromOverlay_ForwardsWindowHandleAndOpacity()
         {
             var service = new FakeMainService();
