@@ -56,6 +56,17 @@ namespace Stealth.ViewModel.Tests
         }
 
         [TestMethod]
+        public void OverlaySetting_IsOffByDefault()
+        {
+            // Reads the default metadata rather than a possibly persisted user value.
+            var property = typeof(Stealth.Properties.Settings).GetProperty("OverlayEnabled");
+            var metadata = (System.Configuration.DefaultSettingValueAttribute)
+                Attribute.GetCustomAttribute(property, typeof(System.Configuration.DefaultSettingValueAttribute));
+            Assert.IsNotNull(metadata);
+            Assert.AreEqual("False", metadata.Value);
+        }
+
+        [TestMethod]
         public void WindowCounts_TrackFilteringAndRefresh()
         {
             var active = new WindowInfoItemModel { Title = "Chrome" };

@@ -49,7 +49,8 @@ namespace Stealth.Core
                 }
             }
             catch (Exception ex) when (ex is ArgumentException || ex is System.ComponentModel.Win32Exception ||
-                                       ex is System.InvalidOperationException || ex is System.IO.IOException ||
+                                       ex is System.InvalidOperationException || ex is System.Security.SecurityException ||
+                                       ex is System.Runtime.InteropServices.ExternalException || ex is System.IO.IOException ||
                                        ex is UnauthorizedAccessException)
             {
                 // Protected processes and rapidly exiting windows are normal.
