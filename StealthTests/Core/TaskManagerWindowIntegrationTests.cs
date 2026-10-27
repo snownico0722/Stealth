@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Stealth.Core;
+using Stealth.Model;
 
 namespace Stealth.Core.Tests
 {
@@ -133,6 +134,33 @@ namespace Stealth.Core.Tests
                 TestContext.WriteLine(message.ToString());
                 Assert.IsTrue(accepted && persisted,
                     "Task Manager first pin failed. " + message);
+
+                // The actual user's path is WPF checkbox -> model notification
+                // -> MainService -> WindowStateManager -> SetWindowPos.
+                // Exercise it against TaskManagerWindow rather than only
+                // testing the low-level native call.
+                Assert.IsTrue(manager.TryRestore(main.Handle, out error),
+                    "Cannot restore test baseline: " + error);
+                if (!initial)
+                {
+                    using (var service = new MainService())
+                    {
+                        var model = service.GetWindowListData()
+                            .FirstOrDefault(item => item.HWnd == main.Handle && !item.IsRemoved);
+                        Assert.IsNotNull(model,
+                            "Stealth did not enumerate the actual TaskManagerWindow HWND. " + message);
+                        Assert.IsFalse(model.IsTopMost);
+                        model.IsTopMost = true;
+                        Thread.Sleep(300);
+                        Assert.IsTrue(manager.ReadTopMost(main.Handle),
+                            "First checkbox activation did not pin Task Manager. " +
+                            "error=" + model.TopMostError + " " + message);
+                        Assert.IsNull(model.TopMostError,
+                            "Task Manager topmost model error: " + model.TopMostError);
+                    }
+                    Assert.IsFalse(manager.ReadTopMost(main.Handle),
+                        "Stealth MainService did not restore the task manager on disposal.");
+                }
             }
             finally
             {
