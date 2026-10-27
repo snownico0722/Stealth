@@ -42,8 +42,20 @@ jobs:
             $process.Refresh()
             if ($process.HasExited) { throw "Standalone EXE exited unexpectedly: $($process.ExitCode)" }
           } finally {
-            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
-            Remove-Item $probe -Recurse -Force
+            if ($process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+              [void]$process.WaitForExit(10000)
+            }
+            # Windows can retain the image section briefly after process termination.
+            # Best-effort cleanup should never invalidate a successful smoke test.
+            for ($attempt = 0; $attempt -lt 5; $attempt++) {
+              try {
+                Remove-Item $probe -Recurse -Force -ErrorAction Stop
+                break
+              } catch {
+                Start-Sleep -Milliseconds 400
+              }
+            }
           }
           $sha = (Get-FileHash release/Stealth.exe -Algorithm SHA256).Hash.ToLower()
           [IO.File]::WriteAllText("$PWD/release/SHA256SUMS.txt", "$sha  Stealth.exe`n")
