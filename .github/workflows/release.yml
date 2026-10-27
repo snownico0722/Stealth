@@ -89,5 +89,5 @@ jobs:
         run: |
           test -f release/Stealth.exe
           (cd release && sha256sum -c SHA256SUMS.txt)
-          gh release create v0.10.5 release/Stealth.exe release/SHA256SUMS.txt \
-            --title "Stealth 0.10.5 — Restore Direct Topmost Operation" --target "$GITHUB_SHA" --notes-file RELEASE_NOTES_0.10.5.md --latest
+          gh release create v1.0 release/Stealth.exe release/SHA256SUMS.txt \
+            --title "Stealth 1.0" --target "$GITHUB_SHA" --notes-file RELEASE_NOTES_1.0.md --latest

@@ -37,7 +37,7 @@ Download this fork's official builds at [Releases](https://github.com/snownico07
 
 本分支的 0.8.0 版增加简体中文、语言切换和窗口处理修复。请从本仓库 Releases 下载正式编译版。
 
-## Single EXE / 单文件版 v0.9.0
+## Single EXE / 单文件版
 
 [Download Stealth.exe](https://github.com/snownico0722/Stealth/releases/latest/download/Stealth.exe)
 
@@ -60,3 +60,13 @@ This update covers the 11 window-handling and UI reliability improvements, inclu
 
 完整修改记录参见 [v0.10.0 release notes](https://github.com/snownico0722/Stealth/releases/tag/v0.10.0)。新安装默认关闭悬浮条，原有用户的设置不被覆盖。发布文件仍是单个 Stealth.exe，系统需安装 .NET Framework 4.7.2 或更新版本。
 
+## Stealth 1.0 / 正式版
+
+[下载最新单文件 Stealth.exe](https://github.com/snownico0722/Stealth/releases/latest/download/Stealth.exe) · [v1.0 发布说明](https://github.com/snownico0722/Stealth/releases/tag/v1.0)
+
+- 设置窗口透明度（0–255）与置顶；透明度与置顶可分别恢复。
+- 用户手动执行“恢复原始窗口状态”时，尝试按最初快照恢复；关闭软件时避免覆盖其他程序之后改过的状态。
+- 清理重复窗口写入代码；置顶操作不包含定时重试或特殊强制逻辑。
+- 列表支持窗口标题搜索、按进程缓存图标和两行标题显示；悬浮透明度调节条默认关闭。
+
+Windows 运行需安装 .NET Framework 4.7.2 或更新版本。发布包是单个未签名 EXE。

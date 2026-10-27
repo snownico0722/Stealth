@@ -16,7 +16,7 @@ namespace Stealth.Model
 
         public string GetVersionString()
         {
-            return Assembly.GetEntryAssembly().GetName().Version.ToString();
+            return Assembly.GetEntryAssembly().GetName().Version.ToString(2);
         }
     }
 }
