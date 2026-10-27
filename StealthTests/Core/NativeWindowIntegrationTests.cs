@@ -34,7 +34,7 @@ namespace Stealth.Core.Tests
                 "CreateWindowEx failed: " + Marshal.GetLastWin32Error());
             try
             {
-                var manager = new WindowStateManager(new NativeWindowStateApi(), 0);
+                var manager = new WindowStateManager(new NativeWindowStateApi());
                 action(manager, hwnd);
                 manager.RestoreAll();
             }

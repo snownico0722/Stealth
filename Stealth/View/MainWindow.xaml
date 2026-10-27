@@ -142,7 +142,7 @@
                                 <CheckBox Content="{DynamicResource Action.Topmost}" IsChecked="{Binding IsTopMost, Mode=TwoWay}"
                                           ToolTip="{Binding TopMostError}"
                                           Grid.Column="0" Margin="4,0"/>
-                                <Slider Value="{Binding Opacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="32" Maximum="255" Grid.Column="1"
+                                <Slider Value="{Binding Opacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="255" Grid.Column="1"
                                         ToolTip="{Binding OpacityError}"
                                         VerticalAlignment="Center"/>
                                 <Label Content="{Binding Opacity}" Grid.Column="2" Margin="0,4,4,4"/>

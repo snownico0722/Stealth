@@ -57,15 +57,9 @@ namespace Stealth.Core
         private const uint AlphaFlag = (uint)LAYERED_WINDOW_ATTRIBUTES_FLAGS.LWA_ALPHA;
         private readonly IWindowStateApi api;
         private readonly WindowOpacityWriter opacity;
-        private readonly uint ownPid;
         private readonly Dictionary<IntPtr, State> entries = new Dictionary<IntPtr, State>();
         internal static WindowStateManager Shared { get; } =
-            new WindowStateManager(new NativeWindowStateApi(), OwnProcessId());
-
-        private static uint OwnProcessId()
-        {
-            using (var process = Process.GetCurrentProcess()) return (uint)process.Id;
-        }
+            new WindowStateManager(new NativeWindowStateApi());
 
         private sealed class State
         {
@@ -75,10 +69,9 @@ namespace Stealth.Core
             internal bool Readable, ChangedOpacity, ChangedTopmost, LastTopmost;
         }
 
-        internal WindowStateManager(IWindowStateApi api, uint ownPid)
+        internal WindowStateManager(IWindowStateApi api)
         {
             this.api = api;
-            this.ownPid = ownPid;
             opacity = new WindowOpacityWriter(api);
         }
 
@@ -91,11 +84,6 @@ namespace Stealth.Core
                 return false;
             }
             api.GetIdentity(hwnd, out pid, out tid);
-            if (pid == 0 || tid == 0 || pid == ownPid)
-            {
-                error = "Stealth cannot modify its own windows or an unidentified window.";
-                return false;
-            }
             if (entries.TryGetValue(hwnd, out var previous) &&
                 (previous.Pid != pid || previous.Tid != tid))
                 entries.Remove(hwnd);
@@ -140,16 +128,6 @@ namespace Stealth.Core
         {
             if (!Identify(hwnd, out uint pid, out uint tid, out error)) return false;
             var state = entries.TryGetValue(hwnd, out var saved) ? saved : Snapshot(hwnd, pid, tid);
-            if (!state.Readable)
-            {
-                error = "Original layered transparency cannot be read; operation refused to protect the window.";
-                return false;
-            }
-            if (state.ChangedOpacity && !IsOurOpacity(hwnd, state))
-            {
-                error = "Another application changed this window's transparency. Stealth will not overwrite it.";
-                return false;
-            }
             if (!opacity.TrySetOpacity(hwnd, value, out error)) return false;
             state.ChangedOpacity = true;
             state.LastAlpha = value;
@@ -188,7 +166,9 @@ namespace Stealth.Core
             var failures = new List<string>();
             if (state.ChangedOpacity)
             {
-                if (!IsOurOpacity(hwnd, state))
+                if (!state.Readable && (state.OriginalStyle & Layered) != 0)
+                    failures.Add("The window's original layered attributes were unreadable; exact restoration is unavailable.");
+                else if (!IsOurOpacity(hwnd, state))
                     failures.Add("Transparency was modified externally; no rollback performed.");
                 else if ((state.OriginalStyle & Layered) != 0)
                 {

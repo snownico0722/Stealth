@@ -52,7 +52,7 @@
                 </Grid.ColumnDefinitions>
                 <Slider x:Name="OpacitySlider"
                         Grid.Column="0"
-                        Minimum="32"
+                        Minimum="0"
                         Maximum="255"
                         TickFrequency="1"
                         IsSnapToTickEnabled="False"

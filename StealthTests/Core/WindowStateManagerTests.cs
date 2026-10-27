@@ -19,7 +19,7 @@ namespace Stealth.Core.Tests
         public void OrdinaryWindow_RemovesTemporaryLayeredStyle()
         {
             var api = new FakeApi();
-            var state = new WindowStateManager(api, 999);
+            var state = new WindowStateManager(api);
             Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
             Assert.IsTrue(state.IsModified(Hwnd));
             Assert.IsTrue(state.TryRestore(Hwnd, out _));
@@ -31,7 +31,7 @@ namespace Stealth.Core.Tests
         public void OriginalLayeredState_RestoresAlphaAndColorKey()
         {
             var api = new FakeApi { Style = Layered, Color = 0x1234, Transparency = 170, Flags = Alpha | Key };
-            var state = new WindowStateManager(api, 999);
+            var state = new WindowStateManager(api);
             Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
             Assert.IsTrue(state.TryRestore(Hwnd, out _));
             Assert.AreEqual((byte)170, api.Transparency);
@@ -40,19 +40,41 @@ namespace Stealth.Core.Tests
         }
 
         [TestMethod]
-        public void UnreadableLayeredState_RefusesModification()
+        public void UnreadableLayeredState_AllowsBestEffortModification()
         {
             var api = new FakeApi { Style = Layered, CanRead = false };
-            var state = new WindowStateManager(api, 999);
-            Assert.IsFalse(state.TrySetOpacity(Hwnd, 120, out _));
-            Assert.IsFalse(api.DidWriteTransparency);
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 120, out var warning), warning);
+            Assert.IsTrue(api.DidWriteTransparency);
+            StringAssert.Contains(warning, "Best-effort opacity update");
+            Assert.IsFalse(state.TryRestore(Hwnd, out var limitation));
+            StringAssert.Contains(limitation, "exact restoration is unavailable");
+        }
+
+        [TestMethod]
+        public void DoesNotBlockWindowsWithMatchingProcessId()
+        {
+            var api = new FakeApi { Pid = 44 };
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
+        }
+
+        [TestMethod]
+        public void AllowsOverwritingAnExternalOpacityChange()
+        {
+            var api = new FakeApi();
+            var state = new WindowStateManager(api);
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
+            api.Transparency = 145; // Simulate another program updating its alpha.
+            Assert.IsTrue(state.TrySetOpacity(Hwnd, 80, out _));
+            Assert.AreEqual((byte)80, api.Transparency);
         }
 
         [TestMethod]
         public void FailedTopmost_IsNotMarkedModified()
         {
             var api = new FakeApi { CanPin = false };
-            var state = new WindowStateManager(api, 999);
+            var state = new WindowStateManager(api);
             Assert.IsFalse(state.TrySetTopMost(Hwnd, true, out _));
             Assert.IsFalse(state.IsModified(Hwnd));
         }
@@ -61,7 +83,7 @@ namespace Stealth.Core.Tests
         public void TopmostChange_IsReverted()
         {
             var api = new FakeApi();
-            var state = new WindowStateManager(api, 999);
+            var state = new WindowStateManager(api);
             Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
             state.RestoreAll();
             Assert.AreEqual(0, api.Style & Topmost);
@@ -71,7 +93,7 @@ namespace Stealth.Core.Tests
         public void RecycledHandle_IsNotRestored()
         {
             var api = new FakeApi();
-            var state = new WindowStateManager(api, 999);
+            var state = new WindowStateManager(api);
             Assert.IsTrue(state.TrySetOpacity(Hwnd, 120, out _));
             api.Pid = 55;
             Assert.IsFalse(state.TryRestore(Hwnd, out _));
@@ -82,7 +104,7 @@ namespace Stealth.Core.Tests
         public void PartialRestore_CanBeRetriedWithoutRestoringAlreadyRevertedTopmost()
         {
             var api = new FakeApi { Style = Layered, Transparency = 180, Flags = Alpha };
-            var state = new WindowStateManager(api, 999);
+            var state = new WindowStateManager(api);
             Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
             Assert.IsTrue(state.TrySetOpacity(Hwnd, 100, out _));
             api.FailOriginalTransparencyRestore = true;
