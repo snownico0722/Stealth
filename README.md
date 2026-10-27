@@ -36,3 +36,11 @@ Version **0.8.0** adds Simplified Chinese (automatic locale detection and a manu
 Download this fork's official builds at [Releases](https://github.com/snownico0722/Stealth/releases). Release builds target Windows and require .NET Framework 4.7.2.
 
 本分支的 0.8.0 版增加简体中文、语言切换和窗口处理修复。请从本仓库 Releases 下载正式编译版。
+
+## Single EXE / 单文件版 v0.9.0
+
+[Download Stealth.exe](https://github.com/snownico0722/Stealth/releases/latest/download/Stealth.exe)
+
+The app and its managed dependencies are combined in one executable via Costura.Fody. No companion DLLs are needed, but Windows must have **.NET Framework 4.7.2 or newer** installed.
+
+程序的托管依赖已嵌入单个 EXE 中，下载即可运行，无需放置额外 DLL。电脑仍需安装 .NET Framework 4.7.2 或以上版本。

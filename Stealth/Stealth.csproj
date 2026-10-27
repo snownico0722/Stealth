@@ -15,8 +15,8 @@
     <AssemblyCompany></AssemblyCompany>
     <AssemblyProduct>Stealth</AssemblyProduct>
     <AssemblyCopyright>Copyright ©  2026</AssemblyCopyright>
-    <AssemblyVersion>0.8.0</AssemblyVersion>
-    <FileVersion>0.8.0</FileVersion>
+    <AssemblyVersion>0.9.0</AssemblyVersion>
+    <FileVersion>0.9.0</FileVersion>
     <ComVisible>false</ComVisible>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -48,6 +48,8 @@
     <PackageReference Include="CommonServiceLocator" Version="2.0.7" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.335" PrivateAssets="all" />
+    <PackageReference Include="Fody" Version="6.9.3" PrivateAssets="all" />
+    <PackageReference Include="Costura.Fody" Version="6.2.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
