@@ -53,3 +53,10 @@ The app and its managed dependencies are combined in one executable via Costura.
 - The bottom status bar was removed.
 
 窗口统计移至菜单右上角，菜单统一为「设置」；过长的窗口标题至多显示两行，超出以省略号收尾，悬停可查看完整标题，并禁用横向滚动。
+
+## Stealth v0.10.0 — window reliability / 窗口稳定性
+
+This update covers the 11 window-handling and UI reliability improvements, including safe window-state restoration, cleanup of unmodified closed windows, icon reuse, long window titles, responsive two-line truncation, verified always-on-top, mixed-DPI floating overlay placement, event-driven updates and **floating overlay disabled by default**. Right-click a live modified window row and choose **Restore original window state / 恢复窗口原始状态** to revert.
+
+完整修改记录参见 [v0.10.0 release notes](https://github.com/snownico0722/Stealth/releases/tag/v0.10.0)。新安装默认关闭悬浮条，原有用户的设置不被覆盖。发布文件仍是单个 Stealth.exe，系统需安装 .NET Framework 4.7.2 或更新版本。
+
