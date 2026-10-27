@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Stealth.Model
@@ -19,9 +18,6 @@ namespace Stealth.Model
         private WindowInstanceUtil util;
         private List<WindowInstanceInfo> windowsInstanceList;
         private readonly WindowStateManager _states = WindowStateManager.Shared;
-        private readonly Dictionary<IntPtr, int> _pendingTopmostChecks = new Dictionary<IntPtr, int>();
-        private int _topmostCheckSequence;
-        private bool _disposed;
 
         // window info for view
         public ObservableCollection<WindowInfoItemModel> windowInfoViewList { get; private set; }
@@ -113,8 +109,6 @@ namespace Stealth.Model
 
         public void Dispose()
         {
-            _disposed = true;
-            _pendingTopmostChecks.Clear();
             foreach (var item in windowInfoViewList)
             {
                 item.PropertyChanged -= WindowInfoItemModel_PropertyChanged;
@@ -193,89 +187,21 @@ namespace Stealth.Model
         {
             Console.WriteLine(string.Format($"Set TopMost: {item.Title}, {item.IsTopMost}"));
             var nativeWindow = windowsInstanceList.SingleOrDefault(window => (IntPtr)window.HWnd == item.HWnd);
-            if (nativeWindow != null)
-            {
-                var requested = item.IsTopMost;
-                // Keep the user's checkbox intent until they change it or the
-                // list is explicitly refreshed. A failed or delayed readback
-                // should NOT silently undo an Explorer pin request.
-                bool accepted = _states.TrySetTopMost(item.HWnd, requested, out var error);
-                item.TopMostError = accepted ? null : error;
-                if (accepted)
-                    item.UpdateModificationFromNative(_states.IsModified(item.HWnd));
+            if (nativeWindow == null)
+                return;
 
-                // Confirm later, including when the first Win32 request failed.
-                // Retry at most once; never repeatedly force a window on top.
-                ScheduleTopmostConfirmation(item, requested);
+            // One direct SetWindowPos request for each click. No deferred
+            // verification, timers or automatic retries.
+            bool requested = item.IsTopMost;
+            if (!_states.TrySetTopMost(item.HWnd, requested, out var error))
+            {
+                item.UpdateTopMostFromNative(_states.ReadTopMost(item.HWnd));
+                item.TopMostError = error;
+                return;
             }
-        }
 
-        private void ScheduleTopmostConfirmation(WindowInfoItemModel item, bool expected)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null) return;
-
-            IntPtr hwnd = item.HWnd;
-            int sequence = ++_topmostCheckSequence;
-            _pendingTopmostChecks[hwnd] = sequence;
-
-            // Wait for the target application's initial reaction before
-            // reissuing a request. Check a second time AFTER a retry instead
-            // of discarding its result in the same tick.
-            var verification = new TopmostConfirmation(expected);
-            var timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
-            {
-                Interval = TimeSpan.FromMilliseconds(350)
-            };
-            string retryError = null;
-            EventHandler tick = null;
-            tick = (sender, args) =>
-            {
-                timer.Stop();
-                if (_disposed ||
-                    !_pendingTopmostChecks.TryGetValue(hwnd, out int latest) ||
-                    latest != sequence ||
-                    item.IsRemoved || item.HWnd != hwnd ||
-                    item.IsTopMost != expected)
-                {
-                    timer.Tick -= tick;
-                    return;
-                }
-
-                var result = verification.Observe(_states.ReadTopMost(hwnd), () =>
-                {
-                    if (!_states.TrySetTopMost(hwnd, expected, out retryError))
-                        item.TopMostError = retryError;
-                });
-                if (result == TopmostConfirmationResult.RetryIssued)
-                {
-                    // The target is allowed to process the SECOND SetWindowPos
-                    // before its result is verified. There is no repeating
-                    // enforcement and at most one retry per click.
-                    timer.Interval = TimeSpan.FromMilliseconds(300);
-                    timer.Start();
-                    return;
-                }
-
-                timer.Tick -= tick;
-                _pendingTopmostChecks.Remove(hwnd);
-                if (result == TopmostConfirmationResult.Failed)
-                {
-                    _states.DiscardUnconfirmedTopMost(hwnd, expected);
-                    item.UpdateModificationFromNative(_states.IsModified(hwnd));
-                    item.TopMostError = !string.IsNullOrEmpty(retryError)
-                        ? retryError
-                        : "Windows did not apply the requested always-on-top state.";
-                    // Keep IsTopMost as requested; never silently flip the checkbox.
-                }
-                else
-                {
-                    item.TopMostError = null;
-                    item.UpdateModificationFromNative(_states.IsModified(hwnd));
-                }
-            };
-            timer.Tick += tick;
-            timer.Start();
+            item.TopMostError = null;
+            item.UpdateModificationFromNative(_states.IsModified(item.HWnd));
         }
 
         private void WindowInfoItemModel_PropertyChanged(object sender, PropertyChangedEventArgs e)

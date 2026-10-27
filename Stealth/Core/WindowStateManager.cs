@@ -156,19 +156,6 @@ namespace Stealth.Core
             return true;
         }
 
-        // Only forget a pending topmost change after deferred verification has
-        // established that Windows never applied it. Preserve any opacity state.
-        internal void DiscardUnconfirmedTopMost(IntPtr hwnd, bool expected)
-        {
-            if (entries.TryGetValue(hwnd, out var state) &&
-                state.ChangedTopmost && state.LastTopmost == expected &&
-                ReadTopMost(hwnd) != expected)
-            {
-                state.ChangedTopmost = false;
-                if (!state.ChangedOpacity) entries.Remove(hwnd);
-            }
-        }
-
         internal bool TryRestore(IntPtr hwnd, out string error)
         {
             error = null;

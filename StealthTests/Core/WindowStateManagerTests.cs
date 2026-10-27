@@ -103,13 +103,22 @@ namespace Stealth.Core.Tests
         }
 
         [TestMethod]
-        public void UnconfirmedTopmost_IsNotRetainedAsModified()
+        public void TopmostRequest_OnlyCallsNativeApiOnce()
         {
             var api = new FakeApi { DelayTopmostStyle = true };
             var state = new WindowStateManager(api);
             Assert.IsTrue(state.TrySetTopMost(Hwnd, true, out _));
-            state.DiscardUnconfirmedTopMost(Hwnd, true);
-            Assert.IsFalse(state.IsModified(Hwnd));
+            Assert.AreEqual(1, api.TopmostCallCount);
+            Assert.IsFalse(state.ReadTopMost(Hwnd));
+        }
+
+        [TestMethod]
+        public void FailedTopmostRequest_DoesNotRetryAutomatically()
+        {
+            var api = new FakeApi { CanPin = false };
+            var state = new WindowStateManager(api);
+            Assert.IsFalse(state.TrySetTopMost(Hwnd, true, out _));
+            Assert.AreEqual(1, api.TopmostCallCount);
         }
 
         [TestMethod]
@@ -145,6 +154,7 @@ namespace Stealth.Core.Tests
             internal uint Pid = 44, Tid = 17, Color, Flags;
             internal byte Transparency = 255;
             internal bool CanRead = true, CanPin = true, DidWriteTransparency, FailOriginalTransparencyRestore;
+            internal int TopmostCallCount;
             internal bool DelayTopmostStyle, PendingTopmostValue;
             internal void ApplyPendingTopmost()
             {
@@ -173,6 +183,7 @@ namespace Stealth.Core.Tests
             }
             public bool TrySetTopMost(IntPtr hwnd, bool enabled, out string error)
             {
+                TopmostCallCount++;
                 error = CanPin ? null : "Access denied";
                 if (CanPin)
                 {
