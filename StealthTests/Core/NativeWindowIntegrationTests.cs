@@ -5,8 +5,6 @@ using System.Windows;
 using System.Windows.Interop;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Stealth.Core;
-using Windows.Win32;
-using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Stealth.Core.Tests
 {
@@ -48,13 +46,11 @@ namespace Stealth.Core.Tests
         {
             WithWpfWindow((manager, hwnd) =>
             {
-                var original = PInvoke.GetWindowLong(ToHwnd(hwnd), WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+                var original = manager.ReadLayered(hwnd);
                 Assert.IsTrue(manager.TrySetOpacity(hwnd, 170, out var error), error);
                 Assert.IsTrue(manager.IsModified(hwnd));
                 Assert.IsTrue(manager.TryRestore(hwnd, out error), error);
-                var restored = PInvoke.GetWindowLong(ToHwnd(hwnd), WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
-                Assert.AreEqual(original & (int)WINDOW_EX_STYLE.WS_EX_LAYERED,
-                                restored & (int)WINDOW_EX_STYLE.WS_EX_LAYERED);
+                Assert.AreEqual(original, manager.ReadLayered(hwnd));
             });
         }
 
@@ -71,9 +67,5 @@ namespace Stealth.Core.Tests
             });
         }
 
-        private static HWND ToHwnd(IntPtr hwnd)
-        {
-            unsafe { return new HWND((void*)hwnd); }
-        }
     }
 }

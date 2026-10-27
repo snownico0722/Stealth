@@ -122,6 +122,9 @@ namespace Stealth.Core
             return api.TryGetLayeredAttributes(hwnd, out _, out byte alpha, out _, out _) ? alpha : (byte)255;
         }
 
+        internal bool ReadLayered(IntPtr hwnd) =>
+            (api.GetExtendedStyle(hwnd) & Layered) != 0;
+
         internal bool ReadTopMost(IntPtr hwnd) =>
             (api.GetExtendedStyle(hwnd) & Topmost) != 0;
 
