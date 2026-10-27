@@ -160,9 +160,28 @@ namespace Stealth.Model
         public void UpdateOpacityFromOverlay(IntPtr handle, byte opacity)
         {
             var item = windowInfoViewList.SingleOrDefault(window => window.HWnd == handle && !window.IsRemoved);
-            item?.UpdateOpacityFromNative(opacity);
+            if (item != null)
+            {
+                item.UpdateOpacityFromNative(opacity);
+                item.UpdateModificationFromNative(_states.IsModified(handle));
+            }
         }
 
+
+        public void RestoreOriginal(WindowInfoItemModel item)
+        {
+            if (item == null || item.IsRemoved || !item.IsModified) return;
+            if (!_states.TryRestore(item.HWnd, out string error))
+            {
+                item.OpacityError = error;
+                return;
+            }
+            item.UpdateOpacityFromNative(_states.ReadOpacity(item.HWnd));
+            item.UpdateTopMostFromNative(_states.ReadTopMost(item.HWnd));
+            item.UpdateModificationFromNative(false);
+            item.TopMostError = null;
+            item.OpacityError = null;
+        }
 
         public void SetTopMost(WindowInfoItemModel item)
         {

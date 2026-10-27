@@ -191,12 +191,14 @@ namespace Stealth.Core
                 {
                     if (!api.TrySetLayeredAttributes(hwnd, state.Key, state.OriginalAlpha, state.Flags, out int code))
                         failures.Add("Restoring layered attributes failed (" + code + ").");
+                    else state.ChangedOpacity = false;
                 }
                 else
                 {
                     int style = api.GetExtendedStyle(hwnd);
                     if (!api.TrySetExtendedStyle(hwnd, style & ~Layered, out int code))
                         failures.Add("Restoring window style failed (" + code + ").");
+                    else state.ChangedOpacity = false;
                 }
             }
             if (state.ChangedTopmost)
@@ -206,11 +208,12 @@ namespace Stealth.Core
                 {
                     if (!api.TrySetTopMost(hwnd, (state.OriginalStyle & Topmost) != 0, out string reason))
                         failures.Add(reason);
+                    else state.ChangedTopmost = false;
                 }
                 else failures.Add("Topmost was changed externally; no rollback performed.");
             }
-            if (failures.Count == 0) entries.Remove(hwnd);
-            else error = string.Join(" ", failures);
+            if (!state.ChangedOpacity && !state.ChangedTopmost) entries.Remove(hwnd);
+            if (failures.Count > 0) error = string.Join(" ", failures);
             return failures.Count == 0;
         }
 

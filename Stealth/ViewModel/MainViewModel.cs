@@ -130,6 +130,12 @@ namespace Stealth.ViewModel
         }
 
         //items
+        private RelayCommand<WindowInfoItemModel> _restoreCommand;
+        public RelayCommand<WindowInfoItemModel> RestoreCommand =>
+            _restoreCommand ?? (_restoreCommand = new RelayCommand<WindowInfoItemModel>(
+                item => _mainService.RestoreOriginal(item),
+                item => item != null && !item.IsRemoved && item.IsModified));
+
         private RelayCommand<WindowInfoItemModel> _detailCommand;
         public RelayCommand<WindowInfoItemModel> DetailCommand
         {

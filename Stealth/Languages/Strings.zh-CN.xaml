@@ -11,6 +11,7 @@
     <sys:String x:Key="Filter.Closed">显示已关闭的窗口</sys:String>
     <sys:String x:Key="Filter.Empty">显示无标题窗口</sys:String>
     <sys:String x:Key="Overlay.Enable">启用悬浮调节条</sys:String>
+    <sys:String x:Key="Action.Restore">恢复窗口原始状态</sys:String>
     <sys:String x:Key="Action.Refresh">刷新</sys:String>
     <sys:String x:Key="Action.Detail">详情</sys:String>
     <sys:String x:Key="Action.Topmost">窗口置顶</sys:String>

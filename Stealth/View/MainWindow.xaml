@@ -90,6 +90,13 @@
                             BorderBrush="{StaticResource Border.Main}"
                             BorderThickness="1" Margin="0,2"
                             CornerRadius="8" >
+                        <Border.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{DynamicResource Action.Restore}"
+                                          Command="{Binding Main.RestoreCommand, Source={StaticResource Locator}}"
+                                          CommandParameter="{Binding}"/>
+                            </ContextMenu>
+                        </Border.ContextMenu>
                         <Grid MinHeight="80">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="64"/>

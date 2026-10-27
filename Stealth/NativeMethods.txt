@@ -8,7 +8,6 @@ PostMessage
 GetCursorPos
 SetForegroundWindow
 GetForegroundWindow
-GetWindowInfo
 GetWindowText
 GetWindowTextLength
 GetWindowRect

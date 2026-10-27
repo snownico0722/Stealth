@@ -43,7 +43,7 @@ namespace Stealth.Core
         /// <summary>
         /// User32.WINDOWINFO, contains window information
         /// </summary>
-        internal WINDOWINFO WindowInfo;
+        // Unused WINDOWINFO storage removed along with the invalid GetWindowInfo call.
         #endregion
 
         #region Detailed Info

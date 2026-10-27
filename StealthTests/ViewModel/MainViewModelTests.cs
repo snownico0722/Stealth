@@ -138,6 +138,7 @@ namespace Stealth.ViewModel.Tests
                 LastUpdatedOpacity = opacity;
             }
             public void SetTopMost(WindowInfoItemModel item) { }
+            public void RestoreOriginal(WindowInfoItemModel item) { }
         }
     }
 }

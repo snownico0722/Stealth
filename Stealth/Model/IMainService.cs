@@ -16,5 +16,6 @@ namespace Stealth.Model
         void ChangeOpacity(WindowInfoItemModel item);
         void UpdateOpacityFromOverlay(IntPtr handle, byte opacity);
         void SetTopMost(WindowInfoItemModel item);
+        void RestoreOriginal(WindowInfoItemModel item);
     }
 }

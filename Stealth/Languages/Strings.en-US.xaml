@@ -11,6 +11,7 @@
     <sys:String x:Key="Filter.Closed">Show closed window</sys:String>
     <sys:String x:Key="Filter.Empty">Show empty title window</sys:String>
     <sys:String x:Key="Overlay.Enable">Enable floating overlay</sys:String>
+    <sys:String x:Key="Action.Restore">Restore original window state</sys:String>
     <sys:String x:Key="Action.Refresh">Refresh</sys:String>
     <sys:String x:Key="Action.Detail">Detail</sys:String>
     <sys:String x:Key="Action.Topmost">Top Most</sys:String>
