@@ -2,6 +2,8 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using Stealth.Core;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -19,6 +21,8 @@ namespace Stealth
         private const double ExpandedRootOpacity = 1d;
 
         private readonly DispatcherTimer _hoverExpandTimer;
+        private HwndSource _nativeSource;
+        public event Action PositionRefreshRequested;
         private bool _isUpdating;
         private bool _isExpanded;
         private bool _isDragging;
@@ -134,8 +138,16 @@ namespace Stealth
 
         private void ApplyPosition()
         {
-            Left = _anchorLeft + _manualOffset.X;
-            Top = _anchorTop + _manualOffset.Y;
+            var handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero) return;
+            int desiredX = (int)Math.Round(_anchorLeft + _manualOffset.X);
+            int desiredY = (int)Math.Round(_anchorTop + _manualOffset.Y);
+            double dpi = ScreenPosition.DpiScale(handle);
+            ScreenPosition.Clamp(desiredX, desiredY,
+                (int)Math.Ceiling(ExpandedWidth * dpi),
+                (int)Math.Ceiling(ExpandedHeight * dpi),
+                out int x, out int y);
+            ScreenPosition.Move(handle, x, y);
         }
 
         private void AnimateWidth(double targetWidth)
@@ -183,6 +195,38 @@ namespace Stealth
                 completedAction?.Invoke();
             };
             ExpandedPanel.BeginAnimation(OpacityProperty, animation);
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            _nativeSource = PresentationSource.FromVisual(this) as HwndSource;
+            _nativeSource?.AddHook(OnNativeMessage);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            StopHoverExpandTimer();
+            if (BadgeHost.IsMouseCaptured) BadgeHost.ReleaseMouseCapture();
+            _nativeSource?.RemoveHook(OnNativeMessage);
+            _nativeSource = null;
+            base.OnClosed(e);
+        }
+
+        private IntPtr OnNativeMessage(IntPtr hwnd, int message, IntPtr wParam,
+            IntPtr lParam, ref bool handled)
+        {
+            const int WmDpiChanged = 0x02E0;
+            if (message == WmDpiChanged)
+                Dispatcher.BeginInvoke((Action)(() => PositionRefreshRequested?.Invoke()));
+            return IntPtr.Zero;
+        }
+
+        private void Window_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (!_isDragging) return;
+            _isDragging = false;
+            Collapse();
         }
 
         private void BadgeHost_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

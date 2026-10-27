@@ -18,6 +18,7 @@ namespace Stealth.Model
         private const double OverlayLeftPadding = 8d;
 
         private readonly DispatcherTimer _timer;
+        private WindowEventWatcher _watcher;
         private OverlayWindow _overlayWindow;
         private IntPtr _overlayHandle;
         private IntPtr _currentTargetHandle;
@@ -29,7 +30,7 @@ namespace Stealth.Model
         public OverlayService()
         {
             _timer = new DispatcherTimer(
-                TimeSpan.FromMilliseconds(150),
+                TimeSpan.FromMilliseconds(1500),
                 DispatcherPriority.Background,
                 OnTimerTick,
                 Application.Current.Dispatcher);
@@ -46,17 +47,28 @@ namespace Stealth.Model
             _overlayWindow.SourceInitialized += OverlayWindow_SourceInitialized;
             _overlayWindow.Closed += OverlayWindow_Closed;
             _overlayWindow.OpacityChanged += OverlayWindow_OpacityChanged;
+            _overlayWindow.PositionRefreshRequested += OverlayWindow_PositionRefreshRequested;
             _overlayWindow.Show();
             _overlayWindow.Hide();
+            try { _watcher = new WindowEventWatcher(Application.Current.Dispatcher, RefreshFromEvent); }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // Fallback polling remains available if a global hook is denied.
+                _watcher = null;
+            }
             _timer.Start();
+            OnTimerTick(this, EventArgs.Empty);
         }
 
         public void Stop()
         {
             _timer.Stop();
+            _watcher?.Dispose();
+            _watcher = null;
 
             if (_overlayWindow != null)
             {
+                _overlayWindow.PositionRefreshRequested -= OverlayWindow_PositionRefreshRequested;
                 _overlayWindow.OpacityChanged -= OverlayWindow_OpacityChanged;
                 _overlayWindow.SourceInitialized -= OverlayWindow_SourceInitialized;
                 _overlayWindow.Closed -= OverlayWindow_Closed;
@@ -132,6 +144,16 @@ namespace Stealth.Model
             _overlayHandle = IntPtr.Zero;
         }
 
+        private void RefreshFromEvent()
+        {
+            OnTimerTick(this, EventArgs.Empty);
+        }
+
+        private void OverlayWindow_PositionRefreshRequested()
+        {
+            OnTimerTick(this, EventArgs.Empty);
+        }
+
         private void OnTimerTick(object sender, EventArgs e)
         {
             if (_overlayWindow == null)
@@ -162,7 +184,7 @@ namespace Stealth.Model
 
                 _currentTargetHandle = targetHandle;
                 _overlayWindow.SetOpacityValue(targetWindow.BAlpha);
-                UpdateOverlayPosition(rect);
+                UpdateOverlayPosition(targetHandle, rect);
                 ShowOverlay();
             }
         }
@@ -220,23 +242,21 @@ namespace Stealth.Model
                 .Any(window => new WindowInteropHelper(window).Handle == handle);
         }
 
-        private void UpdateOverlayPosition(RECT rect)
+        private void UpdateOverlayPosition(IntPtr target, RECT rect)
         {
-            var transform = GetTransformFromDevice();
-            var topLeft = transform.Transform(new Point(rect.left, rect.top));
-            var topRight = transform.Transform(new Point(rect.right, rect.top));
-            var anchorWidth = _overlayWindow.AnchorWidth;
-
-            var left = Math.Max(topLeft.X + OverlayLeftPadding, topRight.X - anchorWidth - OverlayRightInset);
-            var top = topLeft.Y + OverlayTopInset;
-
-            _overlayWindow.SetAnchorPosition(left, top);
-        }
-
-        private Matrix GetTransformFromDevice()
-        {
-            var presentationSource = PresentationSource.FromVisual(_overlayWindow);
-            return presentationSource?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+            // GetWindowRect returns screen pixels in our PerMonitorV2 process.
+            // The overlay uses the same pixel coordinate system for placement
+            // and manual dragging; WPF DIP sizes are scaled only here.
+            var scale = ScreenPosition.DpiScale(target);
+            int collapsedWidth = (int)Math.Ceiling(_overlayWindow.AnchorWidth * scale);
+            int expandedWidth = (int)Math.Ceiling(208d * scale);
+            int expandedHeight = (int)Math.Ceiling(32d * scale);
+            int requestedX = (int)Math.Round(Math.Max(rect.left + 8d * scale,
+                rect.right - collapsedWidth - 150d * scale));
+            int requestedY = (int)Math.Round(rect.top + 6d * scale);
+            ScreenPosition.Clamp(requestedX, requestedY, expandedWidth, expandedHeight,
+                out int x, out int y);
+            _overlayWindow.SetAnchorPosition(x, y);
         }
 
         private void ShowOverlay()

@@ -8,6 +8,7 @@
     <RootNamespace>Stealth</RootNamespace>
     <AssemblyName>Stealth</AssemblyName>
     <ApplicationIcon>Stealth.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
 
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyTitle>Stealth</AssemblyTitle>

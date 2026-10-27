@@ -22,7 +22,8 @@
         MouseEnter="Window_MouseEnter"
         MouseLeave="Window_MouseLeave"
         MouseMove="Window_MouseMove"
-        MouseLeftButtonUp="Window_MouseLeftButtonUp">
+        MouseLeftButtonUp="Window_MouseLeftButtonUp"
+        LostMouseCapture="Window_LostMouseCapture">
     <Border x:Name="RootBorder"
             BorderBrush="{StaticResource Border.Main}"
             BorderThickness="1"

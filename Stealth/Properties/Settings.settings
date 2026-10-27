@@ -5,7 +5,7 @@
   </Profiles>
   <Settings>
     <Setting Name="OverlayEnabled" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="UiLanguage" Type="System.String" Scope="User">
       <Value Profile="(Default)"></Value>
