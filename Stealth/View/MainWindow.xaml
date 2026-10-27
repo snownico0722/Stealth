@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ignore="http://www.galasoft.ch/ignore"
+        xmlns:controls="clr-namespace:Stealth.Controls"
         x:Class="Stealth.MainWindow"
         mc:Ignorable="d ignore"
-        Height="600" Width="650" Background="{StaticResource Background.Main}"
+        Height="600" Width="650" MinWidth="420" MinHeight="320" Background="{StaticResource Background.Main}"
         Title="Stealth">
 
     <Window.DataContext>
@@ -17,7 +18,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="30"/>
-            <RowDefinition Height="40"/>
+            <RowDefinition Height="Auto" MinHeight="40"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- The filtered count lives at the right edge of the menu strip. -->
@@ -51,28 +52,25 @@
         <!--筛选框-->
         <TextBox Grid.Row="1" x:Name="textFilterInput" Margin="4,2,4,0"
                  Text="{Binding TitleFilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-        <!--选项-->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="180"/>
-                <ColumnDefinition Width="220"/>
-                <ColumnDefinition Width="170"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- Option labels flow to the next line on narrow windows. -->
+        <DockPanel Grid.Row="2" Margin="4,2,4,2" LastChildFill="True" MinHeight="36">
+            <Button DockPanel.Dock="Right" Content="{DynamicResource Action.Refresh}"
+                    Command="{Binding RefreshCommand}" MinWidth="80" Margin="4,0,0,0"/>
             <Border BorderThickness="1" BorderBrush="{StaticResource Border.Main}"
-                    CornerRadius="4" Grid.ColumnSpan="3" Margin="4,4,0,4"/>
-            <CheckBox x:Name="includeRemovedCheckBox" Content="{DynamicResource Filter.Closed}"
-                      Grid.Column="0" Margin="8,0,0,0"
-                      IsChecked="{Binding includeRemoved, Mode=TwoWay}"/>
-            <CheckBox x:Name="includeEmptyTitleCheckBox" Content="{DynamicResource Filter.Empty}"
-                      Grid.Column="1" Margin="4,0"
-                      IsChecked="{Binding includeEmptyTitle, Mode=TwoWay}"/>
-            <CheckBox x:Name="overlayEnabledCheckBox" Content="{DynamicResource Overlay.Enable}"
-                      Grid.Column="2" Margin="4,0"
-                      IsChecked="{Binding IsOverlayEnabled, Mode=TwoWay}"/>
-            <Button Content="{DynamicResource Action.Refresh}" Command="{Binding RefreshCommand}"
-                    Grid.Column="3" Margin="4"/>
-        </Grid>
+                    CornerRadius="4" Padding="4,2">
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox x:Name="includeRemovedCheckBox" Content="{DynamicResource Filter.Closed}"
+                              Margin="4,3,10,3" VerticalAlignment="Center"
+                              IsChecked="{Binding includeRemoved, Mode=TwoWay}"/>
+                    <CheckBox x:Name="includeEmptyTitleCheckBox" Content="{DynamicResource Filter.Empty}"
+                              Margin="4,3,10,3" VerticalAlignment="Center"
+                              IsChecked="{Binding includeEmptyTitle, Mode=TwoWay}"/>
+                    <CheckBox x:Name="overlayEnabledCheckBox" Content="{DynamicResource Overlay.Enable}"
+                              Margin="4,3,8,3" VerticalAlignment="Center"
+                              IsChecked="{Binding IsOverlayEnabled, Mode=TwoWay}"/>
+                </WrapPanel>
+            </Border>
+        </DockPanel>
         <ListBox Grid.Row="3"
                   ItemsSource="{Binding WindowsView}"
                  HorizontalContentAlignment="Stretch"
@@ -114,15 +112,13 @@
                                 <Border Grid.Column="0" Margin="4,4,4,0" Padding="5,2,4,2"
                                         Background="{StaticResource Background.Main}"
                                         CornerRadius="4" ClipToBounds="True">
-                                    <TextBlock Text="{Binding Title}" ToolTip="{Binding Title}"
-                                               Foreground="{StaticResource Text.Main}"
-                                               FontSize="14"
-                                               VerticalAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               TextTrimming="CharacterEllipsis"
-                                               LineStackingStrategy="BlockLineHeight"
-                                               LineHeight="18"
-                                               MaxHeight="36"/>
+                                    <controls:TwoLineEllipsisText Text="{Binding Title}"
+                                                                 Foreground="{StaticResource Text.Main}"
+                                                                 FontSize="14"
+                                                                 Height="36"
+                                                                 VerticalAlignment="Center"
+                                                                 ToolTip="{Binding Title}"
+                                                                 AutomationProperties.Name="{Binding Title}"/>
                                 </Border>
                                 <Button Content="{DynamicResource Action.Detail}" Grid.Column="1" Margin="0,4,4,0"
                                         Command="{Binding Main.DetailCommand, 
