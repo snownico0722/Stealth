@@ -22,6 +22,9 @@ namespace Stealth.ViewModel
     {
         //// Base Properties
 
+        public uint ProcessId { get; private set; }
+        public uint ThreadId { get; private set; }
+
         private IntPtr _hWnd;
         public IntPtr HWnd
         {
@@ -127,11 +130,14 @@ namespace Stealth.ViewModel
             IsUpdatingFromNative = true;
             try
             {
+                if (ProcIcon == null || ProcessId != nativeSource.ProcessId)
+                    ProcIcon = ProcessIconCache.Shared.ForProcess(nativeSource.ProcessId);
+                ProcessId = nativeSource.ProcessId;
+                ThreadId = nativeSource.ThreadId;
                 HWnd = (IntPtr)nativeSource.HWnd;
                 Title = nativeSource.Title;
                 Opacity = nativeSource.BAlpha;
                 IsTopMost = nativeSource.IsTopMost;
-                ProcIcon = LoadBitmap(nativeSource.iconBitmap);
             }
             finally
             {

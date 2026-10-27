@@ -32,6 +32,8 @@ namespace Stealth.Core
         /// Window Title
         /// </summary>
         public string Title;
+        public uint ProcessId;
+        public uint ThreadId;
 
         /// <summary>
         /// Is this window Visible or not
@@ -149,12 +151,17 @@ namespace Stealth.Core
         public void GetBasicInfo()
         {
             IsVisible = PInvoke.IsWindowVisible(HWnd);
-            char[] t = new char[256];
-            Span<char> span = new Span<char>(t);
-            // PInvoke.GetWindowText(hWnd); may have some exceptions when accessing system processes
-            PInvoke.GetWindowText(HWnd, span);
-            Title = span.Slice(0, span.IndexOf('\0')).ToString();
-            PInvoke.GetWindowInfo(HWnd, ref WindowInfo);
+            // Query the title length first instead of silently truncating at 255.
+            // The limit prevents hostile or buggy windows from demanding huge buffers.
+            var length = Math.Min(16383, Math.Max(0, PInvoke.GetWindowTextLength(HWnd)));
+            if (length > 0)
+            {
+                char[] chars = new char[length + 1];
+                int copied = PInvoke.GetWindowText(HWnd, chars.AsSpan());
+                Title = copied > 0 ? new string(chars, 0, Math.Min(copied, length)) : string.Empty;
+            }
+            else Title = string.Empty;
+            ThreadId = PInvoke.GetWindowThreadProcessId(HWnd, out ProcessId);
         }
 
         /// <summary>

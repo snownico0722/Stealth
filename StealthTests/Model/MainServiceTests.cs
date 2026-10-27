@@ -22,6 +22,27 @@ namespace Stealth.Model.Tests
         }
 
         [TestMethod]
+        public void ClosedUnmodifiedRows_AreDiscardedWhileModifiedHistorySurvives()
+        {
+            using (var service = new MainService())
+            {
+                var unmodified = new WindowInfoItemModel {
+                    HWnd = new IntPtr(-7007), Title = "Old", IsRemoved = true
+                };
+                var modified = new WindowInfoItemModel {
+                    HWnd = new IntPtr(-7008), Title = "Edited", IsRemoved = true, IsModified = true
+                };
+                service.GetWindowListData().Add(unmodified);
+                service.GetWindowListData().Add(modified);
+
+                service.RefreshWindowData();
+
+                Assert.IsFalse(service.GetWindowListData().Contains(unmodified));
+                Assert.IsTrue(service.GetWindowListData().Contains(modified));
+            }
+        }
+
+        [TestMethod]
         public void Dispose_ReleasesCurrentWindowSnapshots()
         {
             var service = new MainService();

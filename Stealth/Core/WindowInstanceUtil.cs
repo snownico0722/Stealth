@@ -26,7 +26,7 @@ namespace Stealth.Core
                                         {
                                             if (getDetailedInfo)
                                             {
-                                                wii.GetDetailedInfo();
+                                                wii.GetDetailedInfo(false);
                                             }
                                             Debug.WriteLine(wii.ToString());
                                             hWndList.Add(wii);

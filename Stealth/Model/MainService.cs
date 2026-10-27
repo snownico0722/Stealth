@@ -46,27 +46,39 @@ namespace Stealth.Model
         private void UpdateWindowInfoItemModelList(ObservableCollection<WindowInfoItemModel> targetModelList,
                                                 List<WindowInstanceInfo> sourceNativeList)
         {
-            // first, tag all current target item status as 'removed'
-            foreach (var targetViewListItem in targetModelList)
-            {
-                targetViewListItem.IsRemoved = true;
-            }
+            // Only live entries participate in matching. A closed historical row
+            // may have the same recycled HWND as a new window and must not be reused.
+            var active = targetModelList.Where(item => !item.IsRemoved)
+                .GroupBy(item => item.HWnd)
+                .ToDictionary(group => group.Key, group => group.First());
+            foreach (var item in active.Values) item.IsRemoved = true;
 
-            // then using the source to match target items one by one
-            foreach (var windowInsatnceItem in sourceNativeList)
+            var liveProcessIds = new HashSet<uint>();
+            foreach (var native in sourceNativeList)
             {
-                var matchedTargetItem = targetModelList.SingleOrDefault(item => item.HWnd == (IntPtr)windowInsatnceItem.HWnd);
-                if (matchedTargetItem == null)    // new (matchedTargetItem is created from default value)
+                var hwnd = (IntPtr)native.HWnd;
+                liveProcessIds.Add(native.ProcessId);
+                WindowInfoItemModel item;
+                if (!active.TryGetValue(hwnd, out item) ||
+                    item.ProcessId != native.ProcessId || item.ThreadId != native.ThreadId)
                 {
-                    matchedTargetItem = new WindowInfoItemModel();
-                    matchedTargetItem.PropertyChanged += WindowInfoItemModel_PropertyChanged;
-                    targetModelList.Add(matchedTargetItem);
-
+                    item = new WindowInfoItemModel();
+                    item.PropertyChanged += WindowInfoItemModel_PropertyChanged;
+                    targetModelList.Add(item);
                 }
-                matchedTargetItem.CopyFrom(windowInsatnceItem);
-                matchedTargetItem.UpdateModificationFromNative(_states.IsModified(matchedTargetItem.HWnd));
-                matchedTargetItem.IsRemoved = false;
+                item.CopyFrom(native);
+                item.UpdateModificationFromNative(_states.IsModified(hwnd));
+                item.IsRemoved = false;
             }
+
+            // A closed, never-modified window must not consume list memory forever.
+            // Modified windows are kept as read-only history until restart.
+            foreach (var obsolete in targetModelList.Where(item => item.IsRemoved && !item.IsModified).ToArray())
+            {
+                obsolete.PropertyChanged -= WindowInfoItemModel_PropertyChanged;
+                targetModelList.Remove(obsolete);
+            }
+            ProcessIconCache.Shared.Prune(liveProcessIds);
         }
 
 

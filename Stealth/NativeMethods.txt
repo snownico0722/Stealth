@@ -10,6 +10,7 @@ SetForegroundWindow
 GetForegroundWindow
 GetWindowInfo
 GetWindowText
+GetWindowTextLength
 GetWindowRect
 IsWindowVisible
 IsIconic
