@@ -171,7 +171,7 @@ namespace Stealth.Model
         public void RestoreOriginal(WindowInfoItemModel item)
         {
             if (item == null || item.IsRemoved || !item.IsModified) return;
-            if (!_states.TryRestore(item.HWnd, out string error))
+            if (!_states.TryRestore(item.HWnd, out string error, userInitiated: true))
             {
                 item.OpacityError = error;
                 return;

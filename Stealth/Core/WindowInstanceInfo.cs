@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
@@ -13,14 +9,6 @@ namespace Stealth.Core
 {
     public class WindowInstanceInfo : IDisposable
     {
-        private static readonly WindowOpacityWriter OpacityWriter = new WindowOpacityWriter(new NativeWindowOpacityApi());
-
-        unsafe private static readonly HWND HWND_TOPMOST = new HWND((void*)(-1));
-        unsafe private static readonly HWND HWND_NOTOPMOST = new HWND((void*)(-2));
-        unsafe private static readonly HWND HWND_TOP = new HWND((void*)(0));
-        unsafe private static readonly HWND HWND_BOTTOM = new HWND((void*)(1));
-
-
         #region Basic Info
 
         /// <summary>
@@ -47,67 +35,11 @@ namespace Stealth.Core
         #endregion
 
         #region Detailed Info
-        private int _extendedStyle;
-
-        private bool _isTopMostChanged;
-        private bool _isTopMost;
-        public bool IsTopMost
-        {
-            get { return _isTopMost; }
-            set
-            {
-                if (_isTopMostChanged = (_isTopMost != value))
-                    _isTopMost = value;
-            }
-        }
-
-        private bool _isLayeredChanged;
-        private bool _isLayered;
-        public bool IsLayered
-        {
-            get { return _isLayered; }
-            set
-            {
-                if (_isLayeredChanged = (_isLayered != value))
-                    _isLayered = value;
-            }
-        }
-
-        public bool _crKeyChanged;
-        private uint _crkey;
-        public uint CrKey
-        {
-            get { return _crkey; }
-            set
-            {
-                if (_crKeyChanged = (_crkey != value))
-                    _crkey = value;
-            }
-        }
-
-        public bool _bAlphaChanged;
-        private byte _bAlpha;
-        public byte BAlpha //uint
-        {
-            get { return _bAlpha; }
-            set
-            {
-                if (_bAlphaChanged = (_bAlpha != value))
-                    _bAlpha = value;
-            }
-        }
-
-        public bool _dwFlagsChanged;
-        private uint _dwFlags;
-        public uint DwFlags
-        {
-            get { return _dwFlags; }
-            set
-            {
-                if (_dwFlagsChanged = (_dwFlags != value))
-                    _dwFlags = value;
-            }
-        }
+        public bool IsTopMost { get; private set; }
+        public bool IsLayered { get; private set; }
+        public uint CrKey { get; private set; }
+        public byte BAlpha { get; private set; }
+        public uint DwFlags { get; private set; }
 
         public Process process
         {
@@ -183,9 +115,9 @@ namespace Stealth.Core
             DwFlags = layeredWindowAttributesLoaded ? (uint)tempDwFlags : 0u;
 
             // Get IsLayered. Opacity works when IsLayered = true
-            _extendedStyle = PInvoke.GetWindowLong(HWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
-            IsLayered = (_extendedStyle & (int)WINDOW_EX_STYLE.WS_EX_LAYERED) != 0;
-            IsTopMost = (_extendedStyle & (int)WINDOW_EX_STYLE.WS_EX_TOPMOST) != 0;
+            var extendedStyle = PInvoke.GetWindowLong(HWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+            IsLayered = (extendedStyle & (int)WINDOW_EX_STYLE.WS_EX_LAYERED) != 0;
+            IsTopMost = (extendedStyle & (int)WINDOW_EX_STYLE.WS_EX_TOPMOST) != 0;
 
             if (!includeProcessDetails)
             {
@@ -247,83 +179,6 @@ namespace Stealth.Core
                     //iconBitmap = Bitmap.FromHicon(SystemIcons.Error.Handle);
                 }
             }
-        }
-
-        /// <summary>
-        /// Commit changes to the window
-        /// </summary>
-        public void CommitChanges()
-        {
-            if (_isTopMostChanged)
-            {
-                _isTopMostChanged = false;
-                if (IsTopMost)
-                {
-                    PInvoke.SetWindowPos(HWnd,
-                                        HWND_TOPMOST, 0, 0, 0, 0,
-                                        SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
-                }
-                else
-                {
-                    PInvoke.SetWindowPos(HWnd,
-                                        HWND_NOTOPMOST, 0, 0, 0, 0,
-                                        SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE);
-                }
-            }
-
-            if (_isLayeredChanged)
-            {
-                _isLayeredChanged = false;
-                SetBitFlag(ref _extendedStyle, (int)WINDOW_EX_STYLE.WS_EX_LAYERED, IsLayered);
-                PInvoke.SetWindowLong(HWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, _extendedStyle);
-            }
-
-            if (_crKeyChanged || _bAlphaChanged || _dwFlagsChanged)
-            {
-                _crKeyChanged = false;
-                _bAlphaChanged = false;
-                _dwFlagsChanged = false;
-                PInvoke.SetLayeredWindowAttributes(HWnd, (COLORREF)CrKey, BAlpha, (LAYERED_WINDOW_ATTRIBUTES_FLAGS)DwFlags);
-            }
-        }
-
-        public bool TrySetOpacity(byte alpha, out string error)
-        {
-            if (!OpacityWriter.TrySetOpacity((IntPtr)HWnd, alpha, out error))
-            {
-                return false;
-            }
-
-            _extendedStyle |= (int)WINDOW_EX_STYLE.WS_EX_LAYERED;
-            _isLayered = true;
-            _isLayeredChanged = false;
-            _bAlpha = alpha;
-            _bAlphaChanged = false;
-            _dwFlags = (uint)LAYERED_WINDOW_ATTRIBUTES_FLAGS.LWA_ALPHA |
-                (_dwFlags & (uint)LAYERED_WINDOW_ATTRIBUTES_FLAGS.LWA_COLORKEY);
-            _dwFlagsChanged = false;
-            return true;
-        }
-
-
-        /// <summary>
-        /// Set or remove a specified bit in the bit flags
-        /// </summary>
-        /// <param name="sourceBits">ref int</param>
-        /// <param name="bitMask">int</param>
-        /// <param name="value">bool</param>
-        private void SetBitFlag(ref int sourceBits, int bitMask, bool value)
-        {
-            if (value)
-                //   sourceBits 1011[0]11
-                //   bitMask    0000[1]00
-                //      OR      1011[1]11
-                sourceBits |= bitMask;
-            else
-                //   sourceBits 1011[1]11
-                //   ~bitMask   1111[0]11
-                //      AND     1011[0]11
-                sourceBits &= ~bitMask;
         }
 
         private void ReplaceIconBitmap(Bitmap newBitmap)

@@ -51,8 +51,6 @@ namespace Stealth.Core
                 error = "SetWindowPos failed (Win32 error " + win32Error + ").";
                 return false;
             }
-            // MainService checks the actual WS_EX_TOPMOST state after the input
-            // event, with at most one retry if the first request did not stick.
             error = null;
             return true;
         }
@@ -156,7 +154,7 @@ namespace Stealth.Core
             return true;
         }
 
-        internal bool TryRestore(IntPtr hwnd, out string error)
+        internal bool TryRestore(IntPtr hwnd, out string error, bool userInitiated = false)
         {
             error = null;
             if (!entries.TryGetValue(hwnd, out var state)) return true;
@@ -178,7 +176,7 @@ namespace Stealth.Core
             {
                 if (!state.Readable && (state.OriginalStyle & Layered) != 0)
                     failures.Add("The window's original layered attributes were unreadable; exact restoration is unavailable.");
-                else if (!IsOurOpacity(hwnd, state))
+                else if (!userInitiated && !IsOurOpacity(hwnd, state))
                     failures.Add("Transparency was modified externally; no rollback performed.");
                 else if ((state.OriginalStyle & Layered) != 0)
                 {
@@ -197,7 +195,7 @@ namespace Stealth.Core
             if (state.ChangedTopmost)
             {
                 bool actual = (api.GetExtendedStyle(hwnd) & Topmost) != 0;
-                if (actual == state.LastTopmost)
+                if (userInitiated || actual == state.LastTopmost)
                 {
                     if (!api.TrySetTopMost(hwnd, (state.OriginalStyle & Topmost) != 0, out string reason))
                         failures.Add(reason);
